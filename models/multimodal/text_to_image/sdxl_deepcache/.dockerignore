@@ -1,0 +1,20 @@
+####################################################################################################
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+####################################################################################################
+
+__pycache__/
+*.pyc
+*.log
+env_*/
+diffusers_onnx/
+diffusers_pipeline/
+deepcache_pipeline/
+DeepCache/
+cache/
+qpc/
+compile_logs/
+onnx_files/
+*.onnx
+*.onnx_data
+images/

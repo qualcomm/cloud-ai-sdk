@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 350" role="img" aria-labelledby="title desc">
+  <title id="title">Efficient Transformers workflow</title>
+  <desc id="desc">A model card is transformed and exported to ONNX, compiled to a QPC, and run on Cloud AI 100 with a prompt producing generated text.</desc>
+  <defs>
+    <marker id="flow-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0 0L7 3.5L0 7Z" fill="#1b65d8"/>
+    </marker>
+    <marker id="prompt-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0 0L7 3.5L0 7Z" fill="#b47b0b"/>
+    </marker>
+    <style>
+      .canvas { fill: #ffffff; }
+      .card { fill: #ffffff; stroke: #90a5c1; stroke-width: 1.75; }
+      .card-key { fill: #f7fbff; stroke: #1b65d8; stroke-width: 2; }
+      .prompt { fill: #fffaf0; stroke: #b47b0b; stroke-width: 1.75; }
+      .output { fill: #f1faf5; stroke: #27845a; stroke-width: 1.75; }
+      .flow { fill: none; stroke: #1b65d8; stroke-width: 2; marker-end: url(#flow-arrow); }
+      .prompt-flow { fill: none; stroke: #b47b0b; stroke-width: 2; marker-end: url(#prompt-arrow); }
+      .label { fill: #52667f; font: 700 11px 'IBM Plex Mono', 'SFMono-Regular', monospace; letter-spacing: 0.8px; }
+      .title { fill: #112746; font: 700 16px 'Aptos Display', 'Segoe UI', sans-serif; }
+      .detail { fill: #52667f; font: 400 12px 'Aptos', 'Segoe UI', sans-serif; }
+      .artifact { fill: #1b65d8; font: 700 12px 'IBM Plex Mono', 'SFMono-Regular', monospace; }
+      .prompt-text { fill: #6d520e; font: 700 13px 'Aptos', 'Segoe UI', sans-serif; }
+      .output-text { fill: #1d6546; font: 700 14px 'Aptos', 'Segoe UI', sans-serif; }
+    </style>
+  </defs>
+
+  <rect class="canvas" width="1040" height="350"/>
+
+  <path class="flow" d="M190 199H214"/>
+  <path class="flow" d="M384 199H408"/>
+  <path class="flow" d="M578 199H602"/>
+  <path class="flow" d="M772 199H796"/>
+  <path class="flow" d="M881 259V284"/>
+
+  <g transform="translate(20 139)">
+    <rect class="card" width="170" height="120" rx="8"/>
+    <text class="label" x="14" y="23">MODEL</text>
+    <text class="title" x="14" y="53">Hugging Face</text>
+    <text class="detail" x="14" y="77">model card</text>
+    <text class="artifact" x="14" y="101">modelName</text>
+  </g>
+
+  <g transform="translate(214 139)">
+    <rect class="card-key" width="170" height="120" rx="8"/>
+    <text class="label" x="14" y="23">TRANSFORM</text>
+    <text class="title" x="14" y="53">QEfficient</text>
+    <text class="detail" x="14" y="77">Cloud AI 100 blocks</text>
+    <text class="artifact" x="14" y="101">weights</text>
+  </g>
+
+  <g transform="translate(408 139)">
+    <rect class="card" width="170" height="120" rx="8"/>
+    <text class="label" x="14" y="23">EXPORT</text>
+    <text class="title" x="14" y="53">ONNX graph</text>
+    <text class="detail" x="14" y="77">deployment model</text>
+    <text class="artifact" x="14" y="101">model.onnx</text>
+  </g>
+
+  <g transform="translate(602 139)">
+    <rect class="card" width="170" height="120" rx="8"/>
+    <text class="label" x="14" y="23">COMPILE</text>
+    <text class="title" x="14" y="53">QPC</text>
+    <text class="detail" x="14" y="77">program container</text>
+    <text class="artifact" x="14" y="101">programqpc.bin</text>
+  </g>
+
+  <g transform="translate(796 139)">
+    <rect class="card-key" width="170" height="120" rx="8"/>
+    <text class="label" x="14" y="23">RUN</text>
+    <text class="title" x="14" y="53">Cloud AI 100</text>
+    <text class="detail" x="14" y="77">accelerator runtime</text>
+    <text class="artifact" x="14" y="101">QPC + QIDs</text>
+  </g>
+
+  <g transform="translate(806 30)">
+    <rect class="prompt" width="150" height="52" rx="8"/>
+    <text class="label" x="14" y="20">PROMPT</text>
+    <text class="prompt-text" x="14" y="40">"Hello"</text>
+    <path class="prompt-flow" d="M75 52V107"/>
+  </g>
+
+  <g transform="translate(791 284)">
+    <rect class="output" width="180" height="50" rx="8"/>
+    <text class="label" x="14" y="20">OUTPUT</text>
+    <text class="output-text" x="14" y="40">generated text</text>
+  </g>
+</svg>

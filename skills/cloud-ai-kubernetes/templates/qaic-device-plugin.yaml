@@ -1,0 +1,88 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+
+# Render this file with envsubst; do not apply it with unresolved variables.
+# Required variables:
+# QAIC_PLUGIN_NAME, QAIC_PLUGIN_NAMESPACE, QAIC_PLUGIN_LABEL,
+# QAIC_PLUGIN_IMAGE, QAIC_PLUGIN_PULL_POLICY, QAIC_KUBELET_ROOT,
+# QAIC_PLUGIN_SKU_RESOURCES, QAIC_PLUGIN_FRACTION,
+# QAIC_WORKER_LABEL, QAIC_WORKER_VALUE.
+#
+# Select exactly one resource mode:
+#   generic:    QAIC_PLUGIN_SKU_RESOURCES=0, QAIC_PLUGIN_FRACTION=None
+#   SKU:        QAIC_PLUGIN_SKU_RESOURCES=1, QAIC_PLUGIN_FRACTION=None
+#   fractional: QAIC_PLUGIN_SKU_RESOURCES=0, QAIC_PLUGIN_FRACTION=Half|Quarter
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ${QAIC_PLUGIN_NAME}
+  namespace: ${QAIC_PLUGIN_NAMESPACE}
+  labels:
+    app: ${QAIC_PLUGIN_LABEL}
+spec:
+  selector:
+    matchLabels:
+      app: ${QAIC_PLUGIN_LABEL}
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: ${QAIC_PLUGIN_LABEL}
+    spec:
+      priorityClassName: system-node-critical
+      hostNetwork: true
+      nodeSelector:
+        ${QAIC_WORKER_LABEL}: ${QAIC_WORKER_VALUE}
+      tolerations:
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: NoExecute
+      containers:
+        - name: qaic-device-plugin
+          image: ${QAIC_PLUGIN_IMAGE}
+          imagePullPolicy: ${QAIC_PLUGIN_PULL_POLICY}
+          securityContext:
+            privileged: true
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          env:
+            - name: QAIC_SKU_BASED_RESOURCE_ENABLED
+              value: "${QAIC_PLUGIN_SKU_RESOURCES}"
+            - name: QAIC_FRACTIONAL_DEVICE_STRATEGY
+              value: "${QAIC_PLUGIN_FRACTION}"
+          volumeMounts:
+            - name: device-plugin-socket
+              mountPath: /var/lib/kubelet/device-plugins
+              mountPropagation: Bidirectional
+            - name: dev-accel
+              mountPath: /dev/accel
+            - name: sys
+              mountPath: /sys
+              readOnly: true
+            - name: udev-run
+              mountPath: /run/udev
+              readOnly: true
+      volumes:
+        - name: device-plugin-socket
+          hostPath:
+            path: ${QAIC_KUBELET_ROOT}/device-plugins
+            type: Directory
+        - name: dev-accel
+          hostPath:
+            path: /dev/accel
+            type: Directory
+        - name: sys
+          hostPath:
+            path: /sys
+            type: Directory
+        - name: udev-run
+          hostPath:
+            path: /run/udev
+            type: Directory

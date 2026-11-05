@@ -1,4 +1,4 @@
-FROM ghcr.io/quic/cloud_ai_triton_server:1.21.4.0
+FROM ghcr.io/qualcomm/cloud_ai_triton_server:1.23.2.0
 
 # Create dedicated environment
 RUN python3 -m venv /opt/yolo-env

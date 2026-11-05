@@ -3,12 +3,18 @@
 # SPDX-License-Identifier: BSD-3-Clause-Clear
 ####################################################################################################
 
-from importlib import import_module
+from __future__ import annotations
 
-# Thin wrapper that re-exports the original implementation from
-# models.vision.segmentation.mask_rcnn.postprocess
-_impl = import_module("models.vision.segmentation.mask_rcnn.preprocess")
+import numpy as np
 
-for name in dir(_impl):
-    if not name.startswith("_"):
-        globals()[name] = getattr(_impl, name)
+from qaic_models.base.preprocess import ImageSize, ImageSizeInput, image_size_wh, load_image_nchw_rgb
+
+
+MASK_RCNN_IMAGE_SIZE = ImageSize(width=1216, height=800)
+
+
+class MaskRCNNImage:
+    """Utility for loading and preprocessing images for Mask R-CNN."""
+
+    def load(image_path: str, size: ImageSizeInput = MASK_RCNN_IMAGE_SIZE, batch: int = 1) -> np.ndarray:
+        return load_image_nchw_rgb(image_path, image_size_wh(size), batch, normalize=False)

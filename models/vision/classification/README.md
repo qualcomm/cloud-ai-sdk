@@ -66,7 +66,7 @@ This script has been tested for the following models. These models are downloade
 For a quick environment setup:
 
 ```commandline
-python3.10 -m venv cv_env
+python3.12 -m venv cv_env
 source cv_env/bin/activate
 ```
 

@@ -24,6 +24,7 @@ def export_onnx(
     output_names: List[str],
     gen_models_path: str,
     model_base_name: str,
+    opset: int,
 ) -> str:
     # Inspect the model's forward method arguments
     pt_model_code = pt_model.forward.__code__
@@ -86,6 +87,7 @@ def export_onnx(
         input_names=input_names,
         output_names=output_names,
         dynamic_axes=dynamic_axes,
+        opset_version=opset,
     )
     return model_base_name
 
@@ -118,9 +120,34 @@ def save_onnx(
 
 
 def simplify_onnx(gen_models_path: str, model_base_name: str, **kwargs) -> str:
-    simple_model, check = onnxsim.simplify(f"{gen_models_path}/{model_base_name}.onnx", **kwargs)
+    model_path = Path(gen_models_path) / f"{model_base_name}.onnx"
+    model = onnx.load(model_path, load_external_data=False)
+    has_external_data = any(
+        tensor.data_location == onnx.TensorProto.EXTERNAL
+        for tensor in external_data_helper._get_all_tensors(model)
+    )
+    simplified_name = f"{model_base_name}_simplified"
+
+    if has_external_data:
+        simplified_path = Path(gen_models_path) / f"{simplified_name}.onnx"
+        check = onnxsim.onnx_simplifier.C.simplify_path(
+            onnxsim.onnx_simplifier.C.ModelExecutor(),
+            str(model_path),
+            str(simplified_path),
+            kwargs.get("skipped_optimizers", []),
+            not kwargs.get("skip_constant_folding", False),
+            not kwargs.get("skip_shape_inference", False),
+            int(1.5 * 2**30),
+            None,  # target_opset_version
+            None,  # rewriter
+        )
+        if not check:
+            raise RuntimeError("Failed verification of simplified model")
+        return simplified_name
+
+    simple_model, check = onnxsim.simplify(str(model_path), **kwargs)
     assert check, "Failed verification of simplified model"
-    return save_onnx(simple_model, gen_models_path, model_base_name + "_simplified")
+    return save_onnx(simple_model, gen_models_path, simplified_name)
 
 
 def fix_onnx_fp16(
@@ -197,7 +224,7 @@ def run_model_on_ort(
     return input_names, ort_outputs
 
 
-def export_t5(block_size, image_size):
+def export_t5(block_size, image_size, opset):
     # Load tokenizer and model
     pipeline = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers", low_cpu_mem_usage=False)
     tokenizer = pipeline.tokenizer_3
@@ -236,7 +263,7 @@ def export_t5(block_size, image_size):
     # Export and simplify ONNX model
     model_base_name = "model"
     fp32_model_name = export_onnx(
-        model, enc_inputs, enc_output_names, gen_models_path, model_base_name
+        model, enc_inputs, enc_output_names, gen_models_path, model_base_name, opset
     )
     fp32_model_name = simplify_onnx(gen_models_path, fp32_model_name)
 

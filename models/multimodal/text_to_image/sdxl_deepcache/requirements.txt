@@ -1,10 +1,10 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
-networkx==3.0
-torch==2.3.1
+networkx==3.1
+torch==2.4.1
 torchvision
 torchaudio
-onnx==1.12.0
+onnx==1.16.0
 onnxruntime
 accelerate
-transformers==4.42
-huggingface-hub==0.25.2
+transformers==4.41.2
+huggingface-hub==0.23.4

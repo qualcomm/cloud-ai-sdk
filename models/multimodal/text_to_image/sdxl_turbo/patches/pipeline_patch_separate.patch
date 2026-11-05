@@ -37,18 +37,6 @@ index 40c981a..06df164 100644
          else:
              self.watermark = None
  
-+        assert os.path.isfile(unet_qpc) and unet_qpc.endswith('programqpc.bin'), f"Provide correct QPCs for unet_qpc: found {unet_qpc = }"
-+        self.unet_sess = qaic.Session(unet_qpc, # ensure that batchsize=2 QPC is used
-+                                      num_activations=1,
-+                                      set_size=1,
-+                                      dev_id=device_id,
-+                                      oversubscription_name='group1')
-+        assert os.path.isfile(vae_decoder_qpc) and vae_decoder_qpc.endswith('programqpc.bin'), f"Provide correct QPCs for vae_decoder_qpc: found {vae_decoder_qpc = }"
-+        self.vae_decoder_sess = qaic.Session(vae_decoder_qpc,
-+                                             num_activations=1,
-+                                             set_size=1,
-+                                             dev_id=device_id,
-+                                             oversubscription_name='group1')
 +        assert os.path.isfile(text_encoder_qpc) and text_encoder_qpc.endswith('programqpc.bin'), f"Provide correct QPCs for text_encoder_qpc: found {text_encoder_qpc = }"
 +        self.text_encoder_sess = qaic.Session(text_encoder_qpc,
 +                                              num_activations=1,
@@ -61,6 +49,18 @@ index 40c981a..06df164 100644
 +                                                set_size=1,
 +                                                dev_id=device_id,
 +                                                oversubscription_name='group1')
++        assert os.path.isfile(unet_qpc) and unet_qpc.endswith('programqpc.bin'), f"Provide correct QPCs for unet_qpc: found {unet_qpc = }"
++        self.unet_sess = qaic.Session(unet_qpc, # ensure that batchsize=2 QPC is used
++                                      num_activations=1,
++                                      set_size=1,
++                                      dev_id=device_id,
++                                      oversubscription_name='group1')
++        assert os.path.isfile(vae_decoder_qpc) and vae_decoder_qpc.endswith('programqpc.bin'), f"Provide correct QPCs for vae_decoder_qpc: found {vae_decoder_qpc = }"
++        self.vae_decoder_sess = qaic.Session(vae_decoder_qpc,
++                                             num_activations=1,
++                                             set_size=1,
++                                             dev_id=device_id,
++                                             oversubscription_name='group1')
 +
      # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.StableDiffusionPipeline.enable_vae_slicing
      def enable_vae_slicing(self):

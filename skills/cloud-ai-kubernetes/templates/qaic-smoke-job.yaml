@@ -1,0 +1,61 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+
+# Render this file with envsubst after the device plugin registers capacity.
+# Required variables:
+# QAIC_SMOKE_NAME, QAIC_SMOKE_NAMESPACE, QAIC_SMOKE_IMAGE,
+# QAIC_SMOKE_UID, QAIC_GID, QAIC_RESOURCE,
+# QAIC_WORKER_LABEL, QAIC_WORKER_VALUE.
+# The image must contain /bin/sh, grep, and qaic-util.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${QAIC_SMOKE_NAME}
+  namespace: ${QAIC_SMOKE_NAMESPACE}
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        ${QAIC_WORKER_LABEL}: ${QAIC_WORKER_VALUE}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: ${QAIC_SMOKE_UID}
+        supplementalGroups:
+          - ${QAIC_GID}
+      initContainers:
+        - name: qaic-group
+          image: ${QAIC_SMOKE_IMAGE}
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              grep -v '^qaic:' /etc/group > /qaic-group/group || true
+              printf 'qaic:x:%s:\n' "${QAIC_GID}" >> /qaic-group/group
+          volumeMounts:
+            - name: qaic-group
+              mountPath: /qaic-group
+      containers:
+        - name: qaic-smoke
+          image: ${QAIC_SMOKE_IMAGE}
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              id
+              ls -l /dev/accel
+              qaic-util -q
+          volumeMounts:
+            - name: qaic-group
+              mountPath: /etc/group
+              subPath: group
+          resources:
+            limits:
+              ${QAIC_RESOURCE}: 1
+      volumes:
+        - name: qaic-group
+          emptyDir: {}

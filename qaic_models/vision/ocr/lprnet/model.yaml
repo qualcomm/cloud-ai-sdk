@@ -1,0 +1,48 @@
+id: lprnet
+display_name: LPRNet
+aliases: [lprnet-pytorch]
+domain: vision
+task: ocr
+provider: lprnet
+family: lprnet
+
+variants:
+  - name: lprnet
+    default: true
+
+source:
+  framework: pytorch
+  kind: git
+  repo: https://github.com/sirius-ai/LPRNet_Pytorch
+  weights: weights/Final_LPRNet_model.pth
+  license: apache-2.0
+
+dataset:
+  name: chinese_license_plates
+  classes: 68
+
+io:
+  inputs:
+    - name: input
+      shape: [1, 3, 24, 94]
+      dtype: float32
+      layout: NCHW
+      color: BGR
+      preprocessing: resize_94x24_sub127.5_mul0.0078125
+  outputs:
+    - name: logits
+      shape: [1, 68, 18]
+      dtype: float32
+      semantics: ctc_logits_68_classes_18_timesteps
+
+defaults:
+  blank_index: 67
+  decode: greedy_ctc
+  onnx_opset: 16
+
+artifacts:
+  onnx_raw: lprnet.onnx
+  onnx_fp16ready: lprnet_fp16ready.onnx
+  qpc_latency: qpc_latency
+  qpc_throughput: qpc_throughput
+

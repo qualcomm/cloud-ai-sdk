@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 370" role="img" aria-labelledby="title desc">
+  <title id="title">DETR workflow on Cloud AI 100</title>
+  <desc id="desc">A pretrained DETR ResNet50 model is exported to ONNX, prepared with qaic-pytools, compiled to a QPC, and run with qaic.Session to produce an annotated image.</desc>
+  <defs>
+    <marker id="flow-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0 0L7 3.5L0 7Z" fill="#1b65d8"/>
+    </marker>
+    <marker id="input-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+      <path d="M0 0L7 3.5L0 7Z" fill="#b47b0b"/>
+    </marker>
+    <style>
+      .canvas { fill: #ffffff; }
+      .card { fill: #ffffff; stroke: #90a5c1; stroke-width: 1.75; }
+      .card-key { fill: #f7fbff; stroke: #1b65d8; stroke-width: 2; }
+      .input { fill: #fffaf0; stroke: #b47b0b; stroke-width: 1.75; }
+      .output { fill: #f1faf5; stroke: #27845a; stroke-width: 1.75; }
+      .flow { fill: none; stroke: #1b65d8; stroke-width: 2; marker-end: url(#flow-arrow); }
+      .input-flow { fill: none; stroke: #b47b0b; stroke-width: 2; marker-end: url(#input-arrow); }
+      .label { fill: #52667f; font: 700 11px 'IBM Plex Mono', 'SFMono-Regular', monospace; letter-spacing: 0.8px; }
+      .title { fill: #112746; font: 700 15px 'Aptos Display', 'Segoe UI', sans-serif; }
+      .detail { fill: #52667f; font: 400 12px 'Aptos', 'Segoe UI', sans-serif; }
+      .artifact { fill: #1b65d8; font: 700 11px 'IBM Plex Mono', 'SFMono-Regular', monospace; }
+      .input-text { fill: #6d520e; font: 700 13px 'Aptos', 'Segoe UI', sans-serif; }
+      .input-artifact { fill: #6d520e; font: 700 11px 'IBM Plex Mono', 'SFMono-Regular', monospace; }
+      .output-text { fill: #1d6546; font: 700 14px 'Aptos', 'Segoe UI', sans-serif; }
+    </style>
+  </defs>
+
+  <rect class="canvas" width="1040" height="370"/>
+
+  <path class="flow" d="M190 205H214"/>
+  <path class="flow" d="M384 205H408"/>
+  <path class="flow" d="M578 205H602"/>
+  <path class="flow" d="M772 205H796"/>
+  <path class="input-flow" d="M881 85V145"/>
+  <path class="flow" d="M881 265V290"/>
+
+  <g transform="translate(20 145)">
+    <rect class="card" width="170" height="120" rx="8"/>
+    <text class="label" x="14" y="23">MODEL</text>
+    <text class="title" x="14" y="53">DETR-ResNet50</text>
+    <text class="detail" x="14" y="77">pretrained model</text>
+    <text class="artifact" x="14" y="101">model weights</text>
+  </g>
+
+  <g transform="translate(214 145)">
+    <rect class="card" width="170" height="120" rx="8"/>
+    <text class="label" x="14" y="23">EXPORT</text>
+    <text class="title" x="14" y="53">PyTorch DETR</text>
+    <text class="detail" x="14" y="77">fixed-shape export</text>
+    <text class="artifact" x="14" y="101">detr_resnet50.onnx</text>
+  </g>
+
+  <g transform="translate(408 145)">
+    <rect class="card-key" width="170" height="120" rx="8"/>
+    <text class="label" x="14" y="23">PREPARE</text>
+    <text class="title" x="14" y="53">qaic-pytools</text>
+    <text class="detail" x="14" y="77">AIC100 preparation</text>
+    <text class="artifact" x="14" y="101">WORKSPACE/*.onnx</text>
+  </g>
+
+  <g transform="translate(602 145)">
+    <rect class="card" width="170" height="120" rx="8"/>
+    <text class="label" x="14" y="23">COMPILE</text>
+    <text class="title" x="14" y="53">qaic-compile</text>
+    <text class="detail" x="14" y="77">FP16 AIC100 QPC</text>
+    <text class="artifact" x="14" y="101">programqpc.bin</text>
+  </g>
+
+  <g transform="translate(796 145)">
+    <rect class="card-key" width="170" height="120" rx="8"/>
+    <text class="label" x="14" y="23">RUN</text>
+    <text class="title" x="14" y="53">qaic.Session</text>
+    <text class="detail" x="14" y="77">Cloud AI 100</text>
+    <text class="artifact" x="14" y="101">pred_logits + boxes</text>
+  </g>
+
+  <g transform="translate(806 25)">
+    <rect class="input" width="150" height="60" rx="8"/>
+    <text class="label" x="14" y="21">INPUT</text>
+    <text class="input-text" x="14" y="42">image</text>
+    <text class="input-artifact" x="76" y="42">pixel_values</text>
+  </g>
+
+  <g transform="translate(775 290)">
+    <rect class="output" width="212" height="55" rx="8"/>
+    <text class="label" x="14" y="21">OUTPUT</text>
+    <text class="output-text" x="14" y="43">annotated image</text>
+  </g>
+</svg>

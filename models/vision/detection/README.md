@@ -17,7 +17,7 @@ The models are downloaded from (https://github.com/ultralytics/yolov5). This scr
 For a quick environment setup:
 
 ```commandline
-python3.10 -m venv det_env
+python3.12 -m venv det_env
 source det_env/bin/activate
 pip3 install -r requirements.txt
 
@@ -74,7 +74,7 @@ optional arguments:
   --device, -d {0,1,2,3,4,5,6,7}
                         AIC100 device ID. Default <0>
   --run-only, -r        Performs the inference only, without re-exporting and re-compiling the model
-  --include-nms         Run the model preparator tool to optimize the graph, and to add the Post Processing to supported models. Details on model preparator tool here- https://quic.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Inference-Workflow/Export-the-model/Prepare-the-model/ 
+  --include-nms         Run the model preparator tool to optimize the graph, and to add the Post Processing to supported models. Details on model preparator tool here- https://qualcomm.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Inference-Workflow/Export-the-model/Prepare-the-model/ 
 
 
 ```

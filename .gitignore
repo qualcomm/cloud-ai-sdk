@@ -1,0 +1,17 @@
+*.pyc
+
+# Generated artifact work directories and local Python environments
+build/
+env_*/
+
+# Python/tooling caches
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Local Claude Code overrides
+CLAUDE.local.md
+
+# Editor directories
+.vscode/
+

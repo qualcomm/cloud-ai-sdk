@@ -109,10 +109,12 @@ else
 fi
 
 export HF_HOME="cache"
-sed -i 's/query_block_size = 128/query_block_size = 256/g' ./env_onnx/lib/python3.10/site-packages/diffusers/models/attention_processor.py
+sed -i 's/query_block_size = 128/query_block_size = 256/g' ./env_onnx/lib/python3.12/site-packages/diffusers/models/attention_processor.py
 
 rm run.sh
 
+RUNARGS=""
+[ $# -gt 0 ] && RUNARGS="$(printf '%q ' "$@")"
 scripts="python main.py \
 --model-path $MODEL_PATH \
 --prompt $PROMPT \
@@ -143,7 +145,7 @@ $COMPILE_UNET_CMD \
 $COMPILE_VAE_CMD \
 $GENERATE_ONNX_CMD \
 $RUN_ONLY_CMD \
-$TOGETHER_CMD"
+$TOGETHER_CMD $RUNARGS"
 
 echo $scripts >> run.sh
 

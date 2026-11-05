@@ -27,9 +27,9 @@ mkdir ${LOG_FOLDER}
 
 # 1. Compile the text encoder - self-generated
 rm -rf ${BINARY_FOLDER}text_encoder
-/opt/qti-aic/exec/qaic-exec \
-    -aic-hw -aic-hw-version=2.0 -aic-perf-warnings -aic-perf-metrics \
-    -compile-only -convert-to-fp16 \
+/opt/qti-aic/exec/qaic-compile \
+    -aic-hw -aic-hw-version=ai100 -aic-perf-warnings -aic-perf-metrics \
+    -convert-to-fp16 \
     -m=./onnx_files/text_encoder/model.onnx \
     -onnx-define-symbol=batch_size,${BATCH_SIZE} \
     -stats-batchsize=${BATCH_SIZE} \
@@ -42,9 +42,9 @@ rm -rf ${BINARY_FOLDER}text_encoder
 
 # 2. Compile the text encoder 2 - self-generated
 rm -rf ${BINARY_FOLDER}text_encoder_2
-/opt/qti-aic/exec/qaic-exec \
-    -aic-hw -aic-hw-version=2.0 -aic-perf-warnings -aic-perf-metrics \
-    -compile-only -convert-to-fp16 \
+/opt/qti-aic/exec/qaic-compile \
+    -aic-hw -aic-hw-version=ai100 -aic-perf-warnings -aic-perf-metrics \
+    -convert-to-fp16 \
     -m=./onnx_files/text_encoder_2/model.onnx \
     -onnx-define-symbol=batch_size,${BATCH_SIZE} \
     -stats-batchsize=${BATCH_SIZE} \
@@ -57,9 +57,9 @@ rm -rf ${BINARY_FOLDER}text_encoder_2
 
 # 3a. Compile the UNet with batchsize=1, blocksize=256
 rm -rf ${BINARY_FOLDER}unet-bs${BATCH_SIZE}
-/opt/qti-aic/exec/qaic-exec \
-    -aic-hw -aic-hw-version=2.0 -aic-perf-warnings -aic-perf-metrics \
-    -compile-only -convert-to-fp16 \
+/opt/qti-aic/exec/qaic-compile \
+    -aic-hw -aic-hw-version=ai100 -aic-perf-warnings -aic-perf-metrics \
+    -convert-to-fp16 \
     -mos=${UNET_MOS_BS1} -ols=${UNET_OLS_BS1} \
     -m=./onnx_files/unet_bs1/unet/model.onnx \
     -onnx-define-symbol=batch_size,${BATCH_SIZE} \
@@ -76,9 +76,9 @@ rm -rf ${BINARY_FOLDER}unet-bs${BATCH_SIZE}
 
 # 3b. Compile the UNet with batchsize=2, blocksize=128
 rm -rf ${BINARY_FOLDER}unet-bs${BATCH_SIZE_2}
-/opt/qti-aic/exec/qaic-exec \
-    -aic-hw -aic-hw-version=2.0 -aic-perf-warnings -aic-perf-metrics \
-    -compile-only -convert-to-fp16 \
+/opt/qti-aic/exec/qaic-compile \
+    -aic-hw -aic-hw-version=ai100 -aic-perf-warnings -aic-perf-metrics \
+    -convert-to-fp16 \
     -mos=${UNET_MOS_BS2} -ols=${UNET_OLS_BS2} \
     -m=./onnx_files/unet_bs2/unet/model.onnx \
     -onnx-define-symbol=batch_size,${BATCH_SIZE_2} \
@@ -97,9 +97,9 @@ rm -rf ${BINARY_FOLDER}unet-bs${BATCH_SIZE_2}
 
 # 4. Compile the VAE Decoder
 rm -rf ${BINARY_FOLDER}vae_decoder
-/opt/qti-aic/exec/qaic-exec \
-    -aic-hw -aic-hw-version=2.0 -aic-perf-warnings -aic-perf-metrics \
-    -compile-only -convert-to-fp16 \
+/opt/qti-aic/exec/qaic-compile \
+    -aic-hw -aic-hw-version=ai100 -aic-perf-warnings -aic-perf-metrics \
+    -convert-to-fp16 \
     -mos=${VAE_MOS} -ols=${VAE_OLS} \
     -m=./onnx_files/vae_decoder/model_fixed_128.onnx \
     -onnx-define-symbol=batch_size,${BATCH_SIZE} \
@@ -114,6 +114,6 @@ rm -rf ${BINARY_FOLDER}vae_decoder
 
 ########################################################################################################################
 
-echo Waiting for qaic-exec processes to finish ...
+echo Waiting for qaic-compile processes to finish ...
 wait
 

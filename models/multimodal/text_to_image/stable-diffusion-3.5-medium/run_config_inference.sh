@@ -33,7 +33,7 @@ COMPILE_VAE=false
 
 # inference configs
 RUN_ONLY=true
-TEXT_ENCODER_3=false
+TEXT_ENCODER_3=true
 DEVICE=0
 DEVICE2=1
 NUM_STEPS=28
@@ -117,6 +117,10 @@ export HF_HOME="cache"
 
 rm run.sh
 
+RUNARGS=""
+# $1 and $2 are the prompt and negative prompt; remaining args pass through to main.py
+[ $# -gt 2 ] && RUNARGS="$(printf '%q ' "${@:3}")"
+
 scripts="python main.py \
 --model-path $MODEL_PATH \
 --prompt $PROMPT \
@@ -145,7 +149,8 @@ $COMPILE_VAE_CMD \
 $GENERATE_ONNX_CMD \
 $RUN_ONLY_CMD \
 $TEXT_ENCODER_3_CMD \
-$TOGETHER_CMD"
+$TOGETHER_CMD \
+$RUNARGS"
 
 echo $scripts >> run.sh
 

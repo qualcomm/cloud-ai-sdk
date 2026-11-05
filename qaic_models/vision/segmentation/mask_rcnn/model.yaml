@@ -1,0 +1,41 @@
+# Catalog manifest for Mask R-CNN. Lightweight serialization of provenance/catalog
+# facts ONLY. It does NOT parameterize the implementation: preprocessing, export
+# overlays, compile flags, and postprocess all live in typed Python (MaskRCNNImage,
+# export_config/export_wrappers/pytorch_transforms, base.compile, PostprocessConfig).
+# A BYOM user needs none of this file.
+
+id: mask_rcnn_resnet50_fpn
+display_name: Mask R-CNN ResNet-50 FPN
+aliases: [mask-rcnn, mask_rcnn]
+domain: vision
+task: instance_segmentation
+family: mask_rcnn
+
+source:
+  framework: detectron2
+  kind: github
+  repo: https://github.com/facebookresearch/detectron2.git
+  commit: 48b598b4f61fbb24182a69b521b2a0ba3252b842
+  license: apache-2.0
+
+requirements:
+  # Detectron2 builds C++/protobuf extensions during export.
+  system_packages:
+    apt: [build-essential, cmake, protobuf-compiler, libprotobuf-dev]
+
+weights:
+  kind: detectron2_model_zoo
+  uri: detectron2://COCO-InstanceSegmentation/mask_rcnn_R_50_FPN_3x/137849600/model_final_f10217.pkl
+
+dataset:
+  name: coco
+  license: cc-by-4.0
+
+# Forward marker: not read by any code today (no registry/load_model() exists
+# yet), but now backed by a real QAICPredictor subclass. Kept as human-readable intent.
+runtime:
+  class: qaic_models.vision.segmentation.mask_rcnn.model.MaskRCNN
+
+catalog:
+  publish: true
+  tags: [instance-segmentation, coco, detectron2]

@@ -1,0 +1,317 @@
+diff --git a/src/diffusers/pipelines/stable_diffusion_3/pipeline_stable_diffusion_3.py b/src/diffusers/pipelines/stable_diffusion_3/pipeline_stable_diffusion_3.py
+index 4b9df57..7e9eb9c 100644
+--- a/src/diffusers/pipelines/stable_diffusion_3/pipeline_stable_diffusion_3.py
++++ b/src/diffusers/pipelines/stable_diffusion_3/pipeline_stable_diffusion_3.py
+@@ -11,7 +11,17 @@
+ # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+-
++#
++####################################################################################################
++# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
++# SPDX-License-Identifier: BSD-3-Clause-Clear
++# Not a Contribution
++####################################################################################################
++import os
++import time
++from concurrent.futures import ThreadPoolExecutor
++import qaic
++import numpy as np
+ import inspect
+ from typing import Any, Callable, Dict, List, Optional, Union
+
+@@ -177,6 +187,13 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
+         tokenizer_2: CLIPTokenizer,
+         text_encoder_3: T5EncoderModel,
+         tokenizer_3: T5TokenizerFast,
++        device_id: Optional[int] = 0,
++        device_id2: Optional[int] = 0,
++        text_encoder_qpc: Optional[str] = "./qpc/text_encoder/programqpc.bin",
++        text_encoder_2_qpc: Optional[str] = "./qpc/text_encoder_2/programqpc.bin",
++        text_encoder_3_qpc: Optional[str] = None,
++        vae_decoder_qpc: Optional[str] = "./qpc/vae_decoder/programqpc.bin",
++        transformer_qpc: Optional[str] = "./qpc/transformer/programqpc.bin",
+     ):
+         super().__init__()
+
+@@ -207,6 +224,47 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
+             self.transformer.config.patch_size if hasattr(self, "transformer") and self.transformer is not None else 2
+         )
+
++        self.executor = ThreadPoolExecutor()
++        assert os.path.isfile(text_encoder_qpc) and text_encoder_qpc.endswith('programqpc.bin'), f"Provide correct QPCs for text_encoder_qpc: found {text_encoder_qpc = }"
++        self.text_encoder_sess = qaic.Session(text_encoder_qpc,
++                                              num_activations=1,
++                                              set_size=1,
++                                              dev_id=device_id ,
++                                              oversubscription_name='group1')
++        assert os.path.isfile(text_encoder_2_qpc) and text_encoder_2_qpc.endswith('programqpc.bin'), f"Provide correct QPCs for text_encoder_2_qpc: found {text_encoder_2_qpc = }"
++        self.text_encoder_2_sess = qaic.Session(text_encoder_2_qpc,
++                                                num_activations=1,
++                                                set_size=1,
++                                                dev_id=device_id,
++                                                oversubscription_name='group1')
++        if text_encoder_3 is not None:
++            assert os.path.isfile(text_encoder_3_qpc) and text_encoder_3_qpc.endswith('programqpc.bin'), f"Provide correct QPCs for text_encoder_3_qpc: found {text_encoder_3_qpc = }"
++            self.text_encoder_3_sess = qaic.Session(text_encoder_3_qpc,
++                                                    num_activations=1,
++                                                    set_size=1,
++                                                    dev_id=device_id,
++                                                    oversubscription_name='group1')
++
++        assert os.path.isfile(transformer_qpc) and transformer_qpc.endswith('programqpc.bin'), f"Provide correct QPCs for transformer_qpc: found {transformer_qpc = }"
++        self.transformer_sess = qaic.Session(transformer_qpc,
++                                      num_activations=1,
++                                      set_size=1,
++                                      dev_id=device_id,
++                                      oversubscription_name='group1')
++        self.transformer_sess2 = qaic.Session(transformer_qpc,
++                                       num_activations=1,
++                                       set_size=1,
++                                       dev_id=device_id2)
++        assert os.path.isfile(vae_decoder_qpc) and vae_decoder_qpc.endswith('programqpc.bin'), f"Provide correct QPCs for vae_decoder_qpc: found {vae_decoder_qpc = }"
++        self.vae_decoder_sess = qaic.Session(vae_decoder_qpc,
++                                             num_activations=1,
++                                             set_size=1,
++                                             dev_id=device_id,
++                                             oversubscription_name='group1')
++
++        # QID device_id2 is a standalone session. Activate it before the
++        # denoising threads concurrently activate the QID 0 ProgramGroup.
++        self.transformer_sess2.setup()
+     def _get_t5_prompt_embeds(
+         self,
+         prompt: Union[str, List[str]] = None,
+@@ -250,7 +304,22 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
+                 f" {max_sequence_length} tokens: {removed_text}"
+             )
+
+-        prompt_embeds = self.text_encoder_3(text_input_ids.to(device))[0]
++        if self.text_encoder_3_sess is not None:
++            start_time = time.perf_counter()
++            inputname = 'input_ids'
++            # convert text_input_ids to numpy
++            i_shape, i_type = self.text_encoder_3_sess.model_input_shape_dict[inputname]
++            # build input_id
++            input_dict = {inputname : text_input_ids.numpy().astype(i_type)}
++            # run session
++            output = self.text_encoder_3_sess.run(input_dict)
++
++            # collect output
++            o_shape, o_type = self.text_encoder_3_sess.model_output_shape_dict['last_hidden_state']
++            prompt_embeds = torch.from_numpy(np.frombuffer(output['last_hidden_state'], dtype=o_type).reshape(o_shape))
++            print(f'Text encoder #3 prompt time : {1000.*(time.perf_counter()-start_time):.6f} ms')
++        else:
++            prompt_embeds = self.text_encoder_3(text_input_ids.to(device))[0]
+
+         dtype = self.text_encoder_3.dtype
+         prompt_embeds = prompt_embeds.to(dtype=dtype, device=device)
+@@ -274,7 +343,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
+         device = device or self._execution_device
+
+         clip_tokenizers = [self.tokenizer, self.tokenizer_2]
+-        clip_text_encoders = [self.text_encoder, self.text_encoder_2]
++        clip_text_encoders = [self.text_encoder_sess, self.text_encoder_2_sess]
+
+         tokenizer = clip_tokenizers[clip_model_index]
+         text_encoder = clip_text_encoders[clip_model_index]
+@@ -298,13 +367,30 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
+                 "The following part of your input was truncated because CLIP can only handle sequences up to"
+                 f" {self.tokenizer_max_length} tokens: {removed_text}"
+             )
+-        prompt_embeds = text_encoder(text_input_ids.to(device), output_hidden_states=True)
+-        pooled_prompt_embeds = prompt_embeds[0]
+
+-        if clip_skip is None:
+-            prompt_embeds = prompt_embeds.hidden_states[-2]
+-        else:
+-            prompt_embeds = prompt_embeds.hidden_states[-(clip_skip + 2)]
++        ### AIC INFERENCE PART FOR PROMPT STARTS HERE ###
++        start_time = time.perf_counter()
++        inputname = 'input_ids'
++        # convert text_input_ids to numpy
++        i_shape, i_type = text_encoder.model_input_shape_dict[inputname]
++        # build input_id
++        input_dict = {inputname : text_input_ids.numpy().astype(i_type)}
++        # run session
++        output = text_encoder.run(input_dict)
++
++        if clip_model_index == 0: # i.e., text_encoder
++            hidden_state_name = f'hidden_states.{11}'
++            o_shape, o_type = text_encoder.model_output_shape_dict['last_hidden_state']
++            pooled_prompt_embeds = torch.from_numpy(np.frombuffer(output['last_hidden_state'], dtype=o_type).reshape(o_shape))
++        else: # i.e., text_encoder_2
++            hidden_state_name = f'hidden_states.{31}'
++            # restructure outputs
++            o_shape, o_type = text_encoder.model_output_shape_dict['text_embeds']
++            pooled_prompt_embeds = torch.from_numpy(np.frombuffer(output['text_embeds'], dtype=o_type).reshape(o_shape))
++        o_shape, o_type = text_encoder.model_output_shape_dict[hidden_state_name]
++        prompt_embeds = torch.from_numpy(np.frombuffer(output[hidden_state_name], dtype=o_type).reshape(o_shape))
++        print(f'Text encoder #{clip_model_index+1} prompt time : {1000.*(time.perf_counter()-start_time):.6f} ms')
++        ### AIC INFERENCE PART FOR PROMPT ENDS HERE ###
+
+         prompt_embeds = prompt_embeds.to(dtype=self.text_encoder.dtype, device=device)
+
+@@ -694,6 +780,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
+         callback_on_step_end: Optional[Callable[[int, int, Dict], None]] = None,
+         callback_on_step_end_tensor_inputs: List[str] = ["latents"],
+         max_sequence_length: int = 256,
++        vae_type = "vae",
+     ):
+         r"""
+         Function invoked when calling the pipeline for generation.
+@@ -826,6 +913,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
+         lora_scale = (
+             self.joint_attention_kwargs.get("scale", None) if self.joint_attention_kwargs is not None else None
+         )
++        text_encode_start_time = time.perf_counter()
+         (
+             prompt_embeds,
+             negative_prompt_embeds,
+@@ -849,6 +937,7 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
+             max_sequence_length=max_sequence_length,
+             lora_scale=lora_scale,
+         )
++        print(f"Text encoding time = {1000.*(time.perf_counter() - text_encode_start_time):.3f} ms")
+
+         if self.do_classifier_free_guidance:
+             prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
+@@ -873,58 +962,67 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
+         )
+
+         # 6. Denoising loop
+-        with self.progress_bar(total=num_inference_steps) as progress_bar:
+-            for i, t in enumerate(timesteps):
+-                if self.interrupt:
+-                    continue
+-
+-                # expand the latents if we are doing classifier free guidance
+-                latent_model_input = torch.cat([latents] * 2) if self.do_classifier_free_guidance else latents
+-                # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
+-                timestep = t.expand(latent_model_input.shape[0])
+-
+-                noise_pred = self.transformer(
+-                    hidden_states=latent_model_input,
+-                    timestep=timestep,
+-                    encoder_hidden_states=prompt_embeds,
+-                    pooled_projections=pooled_prompt_embeds,
+-                    joint_attention_kwargs=self.joint_attention_kwargs,
+-                    return_dict=False,
+-                )[0]
+-
+-                # perform guidance
+-                if self.do_classifier_free_guidance:
+-                    noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
+-                    noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
+-
+-                # compute the previous noisy sample x_t -> x_t-1
+-                latents_dtype = latents.dtype
+-                latents = self.scheduler.step(noise_pred, t, latents, return_dict=False)[0]
+-
+-                if latents.dtype != latents_dtype:
+-                    if torch.backends.mps.is_available():
+-                        # some platforms (eg. apple mps) misbehave due to a pytorch bug: https://github.com/pytorch/pytorch/pull/99272
+-                        latents = latents.to(latents_dtype)
+-
+-                if callback_on_step_end is not None:
+-                    callback_kwargs = {}
+-                    for k in callback_on_step_end_tensor_inputs:
+-                        callback_kwargs[k] = locals()[k]
+-                    callback_outputs = callback_on_step_end(self, i, t, callback_kwargs)
+-
+-                    latents = callback_outputs.pop("latents", latents)
+-                    prompt_embeds = callback_outputs.pop("prompt_embeds", prompt_embeds)
+-                    negative_prompt_embeds = callback_outputs.pop("negative_prompt_embeds", negative_prompt_embeds)
+-                    negative_pooled_prompt_embeds = callback_outputs.pop(
+-                        "negative_pooled_prompt_embeds", negative_pooled_prompt_embeds
+-                    )
+-
+-                # call the callback, if provided
+-                if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0):
+-                    progress_bar.update()
+-
+-                if XLA_AVAILABLE:
+-                    xm.mark_step()
++        start_time = time.perf_counter()
++        device_time = 0
++        for i, t in enumerate(timesteps):
++            if self.interrupt:
++                continue
++
++            # expand the latents if we are doing classifier free guidance
++            latent_model_input = torch.cat([latents] * 2) if self.do_classifier_free_guidance else latents
++            # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
++
++            start_time_device = time.perf_counter()
++            inputname_list = ['hidden_states', 'encoder_hidden_states', 'pooled_projections', 'timestep']
++            tensor_input_list = [latent_model_input, prompt_embeds, pooled_prompt_embeds, torch.Tensor([t])]
++            input_dict = {inputname: tensor_input[0:1].numpy().astype(self.transformer_sess.model_input_shape_dict[inputname][1]) if inputname != "timestep" else tensor_input.numpy().astype(self.transformer_sess.model_input_shape_dict[inputname][1])
++                for inputname, tensor_input in zip(inputname_list, tensor_input_list)
++            }
++            input_dict2 = {inputname: tensor_input[1:2].numpy().astype(self.transformer_sess2.model_input_shape_dict[inputname][1]) if inputname != "timestep" else tensor_input.numpy().astype(self.transformer_sess2.model_input_shape_dict[inputname][1])
++                for inputname, tensor_input in zip(inputname_list, tensor_input_list)
++            }
++            future_1 = self.executor.submit(self.transformer_sess.run, input_dict)
++            future_2 = self.executor.submit(self.transformer_sess2.run, input_dict2)
++            o_shape, o_type = self.transformer_sess.model_output_shape_dict['output']
++            noise_pred = torch.from_numpy(np.concatenate((np.frombuffer(future_1.result()['output'], dtype=o_type).reshape(o_shape),
++                                                        np.frombuffer(future_2.result()['output'], dtype=o_type).reshape(o_shape)
++                                                        ),axis=0))
++            end_time_device = time.perf_counter()
++            device_time += (end_time_device - start_time_device)
++            print(f'Step {i} : {end_time_device-start_time_device:.6f} s')
++
++            # perform guidance
++            if self.do_classifier_free_guidance:
++                noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
++                noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
++
++            # compute the previous noisy sample x_t -> x_t-1
++            latents_dtype = latents.dtype
++            latents = self.scheduler.step(noise_pred, t, latents, return_dict=False)[0]
++
++            if latents.dtype != latents_dtype:
++                if torch.backends.mps.is_available():
++                    # some platforms (eg. apple mps) misbehave due to a pytorch bug: https://github.com/pytorch/pytorch/pull/99272
++                    latents = latents.to(latents_dtype)
++
++            if callback_on_step_end is not None:
++                callback_kwargs = {}
++                for k in callback_on_step_end_tensor_inputs:
++                    callback_kwargs[k] = locals()[k]
++                callback_outputs = callback_on_step_end(self, i, t, callback_kwargs)
++
++                latents = callback_outputs.pop("latents", latents)
++                prompt_embeds = callback_outputs.pop("prompt_embeds", prompt_embeds)
++                negative_prompt_embeds = callback_outputs.pop("negative_prompt_embeds", negative_prompt_embeds)
++                negative_pooled_prompt_embeds = callback_outputs.pop(
++                    "negative_pooled_prompt_embeds", negative_pooled_prompt_embeds
++                )
++
++            if XLA_AVAILABLE:
++                xm.mark_step()
++
++        print(f'Transformer total time (device) : {1000.*device_time:.6f} ms')
++        print(f'Transformer total time : {1000.*(time.perf_counter()-start_time):.6f} ms')
+
+         if output_type == "latent":
+             image = latents
+@@ -932,7 +1030,16 @@ class StableDiffusion3Pipeline(DiffusionPipeline, SD3LoraLoaderMixin, FromSingle
+         else:
+             latents = (latents / self.vae.config.scaling_factor) + self.vae.config.shift_factor
+
+-            image = self.vae.decode(latents, return_dict=False)[0]
++            start_time = time.perf_counter()
++            input_dict = {'latent_sample': latents.numpy()}
++
++            o_shape, o_type = self.vae_decoder_sess.model_output_shape_dict['sample']
++            # Run the model on Qualcomm Cloud AI 100
++            output = self.vae_decoder_sess.run(input_dict)
++            # convert to Tensor.
++            image = torch.from_numpy(np.frombuffer(output['sample'], dtype=o_type).reshape(o_shape))
++
++            print(f'Vae Decoder total time : {1000.*(time.perf_counter()-start_time):.6f} ms')
+             image = self.image_processor.postprocess(image, output_type=output_type)
+
+         # Offload all models

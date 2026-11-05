@@ -1,0 +1,20 @@
+# Install from tutorials/Computer-Vision/DETR after activating cv_workflow_env:
+#   python3.12 -m venv cv_workflow_env
+#   source cv_workflow_env/bin/activate
+#   python -m pip install -r requirements.txt
+# Start Jupyter from this directory after installation:
+#   jupyter notebook --no-browser --ip=0.0.0.0 --port=8888 --allow-root
+
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+torch==2.4.1+cpu
+torchvision==0.19.1+cpu
+numpy==1.26.4
+onnx==1.18.0
+pillow==10.4.0
+requests==2.32.3
+notebook==7.6.3
+ipykernel
+matplotlib==3.7.5
+scipy==1.11.4
+pyyaml

@@ -7,7 +7,7 @@ Benchmarking script for Cloud AI Inference accelerators.
 Download Cloud AI Docker Image:
 
 ```
-docker pull ghcr.io/quic/cloud_ai_inference_ubuntu22:1.21.2.0
+docker pull ghcr.io/qualcomm/cloud_ai_inference_ubuntu22:1.23.2.0
 ```
 
 Start container. For QPC generation, choose a `/cache` location with 1TB or more of free space to store model weights, ONNX files, and QPC model binaries.
@@ -27,7 +27,7 @@ docker run -it \
   --env QEFF_HOME='/cache/qeff_models' \
   --env XDG_CACHE_HOME='/cache' \
   --device /dev/accel/ \
-  ghcr.io/quic/cloud_ai_inference_ubuntu22:1.21.2.0
+  ghcr.io/qualcomm/cloud_ai_inference_ubuntu22:1.23.2.0
 ```
 
 Activate vLLM environment:<br>
@@ -38,7 +38,7 @@ source /opt/vllm-env/bin/activate
 
 ## Installation for AArch64
 
-Follow instructions [here](https://quic.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Installation/vLLM/vLLM/index.html#installing-from-source) to setup the vLLM environment for Cloud AI from source for AArch64.
+Follow instructions [here](https://qualcomm.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Installation/vLLM/vLLM/index.html#installing-from-source) to setup the vLLM environment for Cloud AI from source for AArch64.
 
 Activate vLLM environment:<br>
 
@@ -51,7 +51,7 @@ source qaic-vllm-venv/bin/activate
 Download KV-Heads Replication script from Efficient Transformers. This is needed to efficiently tensor-slice large models across 16 SoCs.
 
 ```
-wget https://github.com/quic/efficient-transformers/raw/refs/heads/release/v1.21.0/scripts/replicate_kv_head/replicate_kv_heads.py
+wget https://github.com/qualcomm/efficient-transformers/raw/refs/heads/release/v1.21.0/scripts/replicate_kv_head/replicate_kv_heads.py
 ```
 
 ## Multi-Device Operation
@@ -68,7 +68,7 @@ The control response timeout must also be extended:
 sudo sh -c 'echo 2600 > /sys/module/qaic/parameters/control_resp_timeout_s'
 ```
 
-More details at: https://github.com/quic/cloud-ai-sdk/tree/1.21/utils/multi-device
+More details at: https://github.com/qualcomm/cloud-ai-sdk/tree/main/utils/multi-device
 
 ## Hugging Face Access Token
 

@@ -150,7 +150,7 @@ def main():
     parser.add_argument("--endpoint", type=str, required=True,
                         help="Triton server URL (e.g., localhost:8000)")
     parser.add_argument("--image", type=str,
-                        default="https://ultralytics.com/images/zidane.jpg",
+                        default="https://github.com/ultralytics/assets/releases/download/v0.0.0/zidane.jpg",
                         help="Image path or URL")
     parser.add_argument("--model", type=str, default="yolo",
                         help="Model name in Triton (default: yolo)")
