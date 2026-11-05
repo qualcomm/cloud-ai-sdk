@@ -304,15 +304,14 @@ def main(args):
         # Compile for fp16
         execute(["rm", "-rf", f"compiled-bin-fp16-{MOTIF}"], f"commands-{MOTIF}.txt", 'a')
         os.makedirs(f"{OUTPUT_FOLDER}fp16-{MOTIF}", exist_ok=True)
-        cmd_elements = ["/opt/qti-aic/exec/qaic-exec",
+        cmd_elements = ["/opt/qti-aic/exec/qaic-compile",
                         f"-m={MODEL}",
                         f"-onnx-define-symbol=batch_size,{BS}",
                         f"-onnx-define-symbol=sequence_length,{SL}",
                         f"-aic-hw",
-                        f"-aic-hw-version=2.0",
+                        f"-aic-hw-version=ai100",
                         f"-aic-num-cores={CORES}",
                         f"-convert-to-fp16",
-                        f"-compile-only",
                         f"-aic-binary-dir=./compiled-bin-fp16-{MOTIF}",
                         f"-stats-batchsize={BS}",
                         f"{EXTRA}"

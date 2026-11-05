@@ -62,16 +62,15 @@ def map2device(
         t5_seq_len = seq_len # use CLIP encoder sequence length
 
     if not together:
-        cmd_elements = ["/opt/qti-aic/exec/qaic-exec",
+        cmd_elements = ["/opt/qti-aic/exec/qaic-compile",
                         f"-aic-hw",
-                        f"-aic-hw-version=2.0",
+                        f"-aic-hw-version=ai100",
                         "-aic-perf-warnings",
                         "-aic-perf-metrics",
                         "-convert-to-fp16",
                         f"-onnx-define-symbol=batch_size,{batch_size}",
                         f"-stats-batchsize={batch_size}",
                         f"-aic-num-cores={num_cores}",
-                        f"-compile-only",
                     ]
         compile_check = False
         if compile_text_encoder:

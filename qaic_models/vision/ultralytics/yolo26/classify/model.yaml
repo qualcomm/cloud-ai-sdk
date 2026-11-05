@@ -1,0 +1,53 @@
+id: yolo26_classify
+display_name: YOLO26 Classify
+aliases: [yolo26s-cls]
+domain: vision
+task: image_classification
+provider: ultralytics
+family: yolo26
+
+variants:
+  - name: yolo26n-cls
+  - name: yolo26s-cls
+    default: true
+  - name: yolo26m-cls
+  - name: yolo26l-cls
+  - name: yolo26x-cls
+
+source:
+  framework: ultralytics
+  kind: pypi
+  package: ultralytics-opencv-headless
+  weights: yolo26s-cls.pt
+  license: agpl-3.0
+
+dataset:
+  name: imagenet-1k
+  classes: 1000
+
+io:
+  inputs:
+    - name: images
+      shape: [batch_size, 3, 224, 224]
+      dtype: float32
+      layout: NCHW
+      color: RGB
+      preprocessing: resize_shortest_224_center_crop_div255
+  outputs:
+    - name: probs
+      shape: [batch_size, 1000]
+      dtype: float32
+      semantics: softmax_probabilities
+
+defaults:
+  topk: 5
+  labels: ImageNet-1K
+
+artifacts:
+  onnx_fp16ready: "<variant>_fp16ready.onnx"
+  qpc_latency: qpc_latency
+  qpc_throughput: qpc_throughput
+
+catalog:
+  publish: true
+  tags: [classification, imagenet, yolo, ultralytics, ai100, fp16]

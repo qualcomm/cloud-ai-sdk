@@ -107,6 +107,9 @@ export HF_HOME="cache"
 
 rm run.sh
 
+RUNARGS=""
+# $1 is the python interpreter; remaining args pass through to main.py
+[ $# -gt 1 ] && RUNARGS="$(printf '%q ' "${@:2}")"
 scripts="$PYTHON main.py \
 --model-path $MODEL_PATH \
 --prompt $PROMPT \
@@ -131,7 +134,7 @@ $COMPILE_UNET_CMD \
 $COMPILE_VAE_CMD \
 $GENERATE_ONNX_CMD \
 $RUN_ONLY_CMD \
-$TOGETHER_CMD"
+$TOGETHER_CMD $RUNARGS"
 
 echo $scripts >> run.sh
 

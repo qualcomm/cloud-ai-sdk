@@ -5,6 +5,32 @@
 
 The instructions below are to run the [Stable Diffusion 3.5 model](stabilityai/stable-diffusion-3.5-medium) on Cloud AI 100. Compile time parameters may need to be adjusted for different cards and different SDKs.
 
+## Containerized workflow (recommended)
+
+Needs Docker with the Compose plugin, about 100 GB of free disk in this
+folder (ONNX models, QPCs, and downloaded weights persist here), and access
+to the gated stabilityai/stable-diffusion-3.5-medium repository: run
+`huggingface-cli login` on the host, the containers mount
+`~/.cache/huggingface/token` read-only.
+
+```bash
+docker compose build
+docker compose run --rm export
+docker compose run --rm inference --prompt <prompt_in_quotes> --neg_prompt <prompt_in_quotes>
+```
+
+`export` covers steps 1 to 3 below: it downloads the gated weights into
+`cache/`, generates the ONNX models for the CLIP and T5 text encoders,
+transformer, and VAE decoder, then compiles all five QPCs.
+`inference` runs on device 0; `--prompt` and `--neg_prompt` are
+both required. It writes one image; add
+`--num-warmup-iters 3 --num-repeat-iters 3` for the full benchmark. Extra
+flags after `inference` pass through to `main.py` (later flags win). See
+`compose.yaml` for details.
+
+The remaining sections describe the manual workflow for hosts without
+containers.
+
 ## 1. Download model
 
 1. Setup environment varialble
@@ -20,7 +46,7 @@ export HF_TOKEN=<your-huggingface-auth-token>
 
 1.  Set up a virtual environment for ONNX generation and compilation
 ```
-python3.10 -m venv env_onnx
+python3.12 -m venv env_onnx
 source ./env_onnx/bin/activate
 pip install -r requirements.txt
 ```
@@ -59,7 +85,7 @@ bash run_config_gen.sh
 
 1. Set up a separate virtual environment
 ```
-python3.10 -m venv env_pipeline
+python3.12 -m venv env_pipeline
 source ./env_pipeline/bin/activate
 pip install -r requirements.txt
 pip install --force-reinstall /opt/qti-aic/dev/lib/x86_64/qaic-0.0.1-py3-none-any.whl

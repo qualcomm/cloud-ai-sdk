@@ -57,9 +57,9 @@ def map2device(
     os.makedirs(binary_dir, exist_ok=True)
 
     if not together:
-        cmd_elements = ["/opt/qti-aic/exec/qaic-exec",
+        cmd_elements = ["/opt/qti-aic/exec/qaic-compile",
                         f"-aic-hw",
-                        f"-aic-hw-version=2.0",
+                        f"-aic-hw-version=ai100",
                         "-aic-perf-warnings",
                         "-aic-perf-metrics",
                         "-convert-to-fp16",
@@ -67,7 +67,6 @@ def map2device(
                         f"-stats-batchsize={batch_size}",
                         f"-onnx-define-symbol=sequence_length,{seq_len}",
                         f"-aic-num-cores={num_cores}",
-                        f"-compile-only",
                     ]
         compile_check = False
         if compile_text_encoder:

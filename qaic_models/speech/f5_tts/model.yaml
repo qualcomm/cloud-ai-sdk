@@ -1,0 +1,119 @@
+id: f5_tts
+display_name: F5-TTS
+aliases: [f5tts, f5-tts]
+domain: speech
+task: text_to_speech
+
+variants:
+  - name: F5TTS_v1_Base
+    default: true
+
+source:
+  framework: pytorch
+  kind: github
+  repo: https://github.com/SWivid/F5-TTS.git
+  commit: 77d3ec623b861ea3cebd3a11f0f9a14489112464
+  license: mit
+  vocoder:
+    framework: pytorch
+    kind: github
+    repo: https://github.com/charactr-platform/vocos.git
+    commit: 11b4628853c9e79dbc4577b01ecb02cfbc78255d
+    license: mit
+
+weights:
+  kind: huggingface_hub
+  repo: SWivid/F5-TTS
+  revision: 84e5a410d9cead4de2f847e7c9369a6440bdfaca
+
+io:
+  inputs:
+    - name: ref_file
+      type: audio
+      semantics: reference_audio_for_voice_cloning
+    - name: ref_text
+      type: text
+      semantics: transcript_of_reference_audio
+    - name: gen_text
+      type: text
+      semantics: text_to_synthesize
+  stages:
+    - name: F5_Preprocess
+      runs_on: host_cpu
+      inputs:
+        - {name: mel_signal, dtype: float32}
+        - {name: text_ids, dtype: int32}
+        - {name: input_lengths, dtype: int64}
+      outputs:
+        - {name: rope_cos_q, dtype: float32}
+        - {name: rope_sin_q, dtype: float32}
+        - {name: rope_cos_k, dtype: float32}
+        - {name: rope_sin_k, dtype: float32}
+        - {name: cat_mel_text, dtype: float32}
+        - {name: cat_mel_text_drop, dtype: float32}
+    - name: F5_Transformer
+      runs_on: cloud_ai_100
+      batch: 2
+      batch_semantics: classifier_free_guidance_conditional_unconditional
+      inputs:
+        - {name: noise, dtype: float32}
+        - {name: rope_cos_q, dtype: float32}
+        - {name: rope_sin_q, dtype: float32}
+        - {name: rope_cos_k, dtype: float32}
+        - {name: rope_sin_k, dtype: float32}
+        - {name: cat_mel_text, dtype: float32}
+        - {name: time_step, dtype: int32}
+        - {name: input_lengths, dtype: int32}
+      outputs:
+        - {name: denoised, dtype: float32}
+    - name: F5_Decode
+      runs_on: cloud_ai_100
+      inputs:
+        - {name: denoised, dtype: float32}
+      outputs:
+        - {name: magnitude, dtype: float32}
+        - {name: phase, dtype: float32}
+  output:
+    name: waveform
+    dtype: int16
+    sample_rate: 24000
+
+defaults:
+  duration_buckets: [1536, 2944]
+  nfe_steps: 16
+  cfg_strength: 2.0
+  sway_coefficient: -1.0
+  random_seed: 102
+  transformer_cores: 12
+  decode_cores: 4
+  transformer_device_ids: [0, 1, 2, 3]
+  decode_device_ids: [0]
+
+artifacts:
+  preprocess_onnx: F5_Preprocess.onnx
+  transformer_onnx: F5_Transformer_fixed_for_fp16.onnx
+  decode_onnx: F5_Decode.onnx
+  transformer_qpc: "qpc_transformer_<cores>c/programqpc.bin"
+  decode_qpc: "qpc_decode_<cores>c/programqpc.bin"
+
+triton:
+  # Single python-backend model serving the full pipeline. The diffusion loop
+  # is stateful (host-side noise/CFG update between QAIC calls), so the stages
+  # are not exposed as separate models and there is no static ensemble.
+  model_name: f5_tts
+  backend: python
+  inputs:
+    - {name: reference_wav, dtype: float32, dims: [-1]}
+    - {name: reference_wav_len, dtype: int32, dims: [1]}
+    - {name: reference_text, dtype: string, dims: [1]}
+    - {name: target_text, dtype: string, dims: [1]}
+  outputs:
+    - {name: waveform, dtype: float32, dims: [-1], semantics: "float in [-1, 1]; int16 = round(w * 32767)"}
+  bundled_artifacts:
+    - F5_Preprocess.onnx
+    - "qpc_transformer_<cores>c/"
+    - "qpc_decode_<cores>c/"
+
+catalog:
+  publish: true
+  tags: [text-to-speech, speech-generation, diffusion, ai100]

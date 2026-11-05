@@ -8,6 +8,28 @@
 The instructions below are to run [the Stable Diffusion XL model](stabilityai/stable-diffusion-xl-base-1.0) on Cloud AI 100. For Cloud AI Standard Accelerators (AWS DL2q EC2 instances), the block size in attention_processor.py will need to be tuned. Other compile time parameters may also need to be adjusted (e.g., -aic-num-cores)
 
 
+## Containerized workflow (recommended)
+
+Needs Docker with the Compose plugin and about 50 GB of free disk in this
+folder (ONNX models, QPCs, and downloaded weights persist here).
+
+```bash
+docker compose build
+docker compose run --rm export
+docker compose run --rm inference --prompt <prompt_in_quotes> --negative_prompt <prompt_in_quotes>
+```
+
+`export` covers parts 2 and 3 below: ONNX generation (fetching the fixed VAE
+decoder file if absent) and all five QPC compiles. `inference` runs part 4 on
+device 0 with the batchsize-2 UNet QPC; `--prompt` and `--negative_prompt` are
+both required. It writes one image; add
+`--num_warmup_iters 3 --num_repeat_iters 3` for the full benchmark. Extra
+flags after `inference` pass through to `run_sdxl.py` (later flags win). See
+`compose.yaml` for details.
+
+The remaining sections describe the manual workflow for hosts without
+containers.
+
 ## Folder Structure
 
 ```
@@ -23,28 +45,31 @@ The instructions below are to run [the Stable Diffusion XL model](stabilityai/st
 
 ## Pre-requisites
 ---
-Install the `moreutils` package for the `ts` timestamp tool:
-```
-sudo apt-get install moreutils
-```
-
-Install Git Large File System (LFS) support
+Install `moreutils` package for the `ts` timestamp tool and Git Large File System (LFS) support.
 
 ```
 sudo apt update
-sudo apt-get install git-lfs
+sudo apt-get install moreutils git-lfs
 ```
 
 ## 1. Install Platform and Apps SDK
 
-Install the latest Platform and Apps SDKs following the instructions in the [Cloud AI documentation](https://quic.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Installation/Cloud-AI-SDK/Cloud-AI-SDK/).
+Choose one of the following deployment environments:
+
+- **Container:** Use the
+  [cloud_ai_inference_ubuntu24](https://github.com/qualcomm/cloud-ai-containers/pkgs/container/cloud_ai_inference_ubuntu24)
+  container. Run the remaining SDK, export, compile, and inference commands
+  inside the container.
+- **Bare-metal host:** Install the Platform and Apps SDKs directly on the host
+  by following the [Cloud AI installation
+  documentation](https://qualcomm.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Installation/Cloud-AI-SDK/Cloud-AI-SDK/).
 
 
 ## 2. Generate ONNX files (skip this step if ONNX files are already available)
 
 1.  Set up a virtual environment for ONNX generation
 ```
-python3.10 -m venv env_sdxl_onnxgen
+python3.12 -m venv env_sdxl_onnxgen
 source ./env_sdxl_onnxgen/bin/activate
 pip install -r requirements.txt
 ```
@@ -76,7 +101,7 @@ python generate_onnx_files.py onnx_files/unet_bs2/ --export_unet
 
 6. Modify attention_processor.py with blocksize = 256 directly in the installed diffusers library
 ```
-sed -i 's/query_block_size = 128/query_block_size = 256/g' ./env_sdxl_onnxgen/lib/python3.10/site-packages/diffusers/models/attention_processor.py
+sed -i 's/query_block_size = 128/query_block_size = 256/g' ./env_sdxl_onnxgen/lib/python3.12/site-packages/diffusers/models/attention_processor.py
 ```
 
 7. Generate ONNX files for UNet for batchsize = 1
@@ -112,7 +137,7 @@ bash -x compile_models.sh
 1. Set up a separate virtual environment for running SDXL (this would conflict with code changes for ONNX generation - hence separate environment)
 
 ```
-python3.10 -m venv env_sdxl_infer
+python3.12 -m venv env_sdxl_infer
 source ./env_sdxl_infer/bin/activate
 pip install -r requirements.txt
 pip install --force-reinstall /opt/qti-aic/dev/lib/x86_64/qaic-0.0.1-py3-none-any.whl
@@ -138,7 +163,7 @@ cd ..
 
 For running on 1 device, pass in `device_id` argument, and `unet` argument point to the batchsize=2 QPC
 ```
-sudo ./env_sdxl_infer/bin/python run_sdxl.py \
+./env_sdxl_infer/bin/python run_sdxl.py \
     --prompt <prompt_in_quotes> \
     --negative_prompt <negative_prompt_in_quotes> \
     --device_id 0 \
@@ -151,7 +176,7 @@ sudo ./env_sdxl_infer/bin/python run_sdxl.py \
 
 For running on 2 devices, pass in `device_id` and `device_id2` arguments, and `unet` argument point to the batchsize=1 QPC
 ```
-sudo ./env_sdxl_infer/bin/python run_sdxl.py \
+./env_sdxl_infer/bin/python run_sdxl.py \
     --prompt <prompt_in_quotes> \
     --negative_prompt <negative_prompt_in_quotes> \
     --device_id 0 \

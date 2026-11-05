@@ -6,6 +6,28 @@
 The instructions below are to run the [Stable Diffusion XL model](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0) with [DeepCache](https://github.com/horseee/DeepCache) on Cloud AI 100.
 
 
+## Containerized workflow (recommended)
+
+Needs Docker with the Compose plugin and about 50 GB of free disk in this
+folder (ONNX models, QPCs, and downloaded weights persist here).
+
+```bash
+docker compose build
+docker compose run --rm export
+docker compose run --rm inference --prompt <prompt_in_quotes>
+```
+
+`export` downloads the model weights, then runs both the deep and shallow
+DeepCache passes described in step 1 and compiles all QPCs. `inference`
+writes one image (`--prompt` optional; `run_config_inference.sh` supplies a
+default if omitted); add
+`--num-warmup-iters 3 --num-repeat-iters 3` for the full benchmark. Extra
+flags after `inference` pass through to `main.py` (later flags win). See
+`compose.yaml` for details.
+
+The remaining sections describe the manual workflow for hosts without
+containers.
+
 ## Pre-requisites
 
 Install the moreutils package for the `ts` timestamp tool:
@@ -25,7 +47,7 @@ sudo apt-get install git-lfs
 
 1.  Set up a virtual environment for ONNX generation and compilation
 ```
-python3.10 -m venv env_onnx
+python3.12 -m venv env_onnx
 source ./env_onnx/bin/activate
 pip install -r requirements.txt
 ```
@@ -73,7 +95,7 @@ bash run_config_deep.sh
 
 7. Modify the UNet to be the shallow version
 ```
-sed -i '963s/False/True/' env_onnx/lib/python3.10/site-packages/DeepCache/sdxl/unet_2d_condition.py
+sed -i '963s/False/True/' env_onnx/lib/python3.12/site-packages/DeepCache/sdxl/unet_2d_condition.py
 ```
 
 8. Generate ONNX file and compile shallow UNet for DeepCache
@@ -85,7 +107,7 @@ bash run_config_shallow.sh
 
 1. Set up a separate virtual environment for running SDXL 
 ```
-python3.10 -m venv env_pipeline
+python3.12 -m venv env_pipeline
 source ./env_pipeline/bin/activate
 pip install -r requirements.txt
 pip install --force-reinstall /opt/qti-aic/dev/lib/x86_64/qaic-0.0.1-py3-none-any.whl
@@ -101,16 +123,16 @@ cd ..
 
 3. Install DeepCache and prepare the pipeline for inference
 ```
-git clone https://github.com/horseee/DeepCache.git deepcache_pipeline
+git clone --depth 1 https://github.com/horseee/DeepCache.git deepcache_pipeline
 cd deepcache_pipeline
 git apply --reject --whitespace=fix ../patches/deepcache_pipeline.patch
 pip install .
 cd ..
 ```
 
-4. Run the SDXL inference with 'sudo' flag if needed to access the AI100 devices. 
+4. Run the SDXL inference on AI 100 device. 
 ```
-sudo bash run_config_inference.sh $(which python3)
+bash run_config_inference.sh $(which python3)
 ```
 Note: ```CACHE_INTERVAL``` variable in ```run_config_inference.sh``` refers to the period of caching
 

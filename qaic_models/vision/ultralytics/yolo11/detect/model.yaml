@@ -1,0 +1,65 @@
+id: yolo11_detect
+display_name: YOLO11 Detect
+aliases: [yolo11, yolo-11]
+domain: vision
+task: object_detection
+provider: ultralytics
+family: yolo11
+
+variants:
+  - name: yolo11n
+  - name: yolo11s
+  - name: yolo11m
+    default: true
+  - name: yolo11l
+  - name: yolo11x
+
+source:
+  framework: ultralytics
+  kind: pypi
+  package: ultralytics-opencv-headless
+  weights: yolo11m.pt
+  license: agpl-3.0
+
+dataset:
+  name: coco
+  classes: 80
+
+io:
+  inputs:
+    - name: images
+      shape: [batch_size, 3, 640, 640]
+      dtype: float32
+      layout: NCHW
+      color: RGB
+      preprocessing: letterbox_640_pad114_div255
+  outputs:
+    - name: output0
+      shape: [batch_size, 84, 8400]
+      dtype: float32
+      semantics: cxcywh_plus_80_class_scores
+      record_layout:
+        batch_axis: 0
+        record_axis: 2
+        field_axis: 1
+        fields:
+          - {name: cx, index: 0}
+          - {name: cy, index: 1}
+          - {name: width, index: 2}
+          - {name: height, index: 3}
+          - {name: class_scores, slice: [4, 84]}
+        ranking: {field: class_scores, reduction: max}
+
+defaults:
+  confidence_threshold: 0.25
+  nms_iou_threshold: 0.45
+  labels: COCO_80
+
+artifacts:
+  onnx_fp16ready: "<variant>_fp16ready.onnx"
+  qpc_latency: qpc_latency
+  qpc_throughput: qpc_throughput
+
+catalog:
+  publish: true
+  tags: [object-detection, yolo, coco80, ultralytics, ai100, fp16]

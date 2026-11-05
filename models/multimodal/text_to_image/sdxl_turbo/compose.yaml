@@ -1,0 +1,70 @@
+####################################################################################################
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+####################################################################################################
+
+# SDXL Turbo container workflow (Cloud AI SDK 1.23)
+#
+#   docker compose build
+#   docker compose run --rm export
+#   docker compose run --rm inference --prompt <prompt_in_quotes>
+#
+# `export` follows README steps 4-5: fetch the VAE decoder (a direct download
+# replaces the README's git clone + git-lfs pull) and run run_config_gen.sh
+# (ONNX + QPC compile). `inference` runs run_config_inference.sh and writes one
+# image by default (add --num-warmup-iters 3 --num-repeat-iters 3 for the full
+# benchmark). Extra flags after `inference` are passed through to main.py;
+# later flags win. `export` takes no flags.
+#
+# Results persist in this recipe folder on the host: cache/, onnx_files/,
+# qpc/, compile_logs/, images/.
+services:
+  export:
+    build:
+      context: .
+      target: export
+    image: sdxl-turbo-export
+    working_dir: /opt/recipe
+    volumes: &persist
+      - ./cache:/opt/recipe/cache
+      - ./onnx_files:/opt/recipe/onnx_files
+      - ./qpc:/opt/recipe/qpc
+      - ./compile_logs:/opt/recipe/compile_logs
+      - ./images:/opt/recipe/images
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        VAE=cache/stabilityai/sdxl_turbo/vae_decoder/model.onnx
+        if [ ! -f "$$VAE" ]; then
+          echo "[export] fetching SDXL Turbo VAE decoder to $$VAE"
+          mkdir -p "$$(dirname "$$VAE")"
+          curl -fL --retry 3 -o "$$VAE" \
+            "https://huggingface.co/stabilityai/sdxl-turbo/resolve/main/vae_decoder/model.onnx"
+        fi
+        bash run_config_gen.sh
+        echo "[export] complete; host outputs in cache/, onnx_files/, qpc/, compile_logs/"
+  inference:
+    build:
+      context: .
+      target: pipeline
+    image: sdxl-turbo-pipeline
+    working_dir: /opt/recipe
+    volumes: *persist
+    # Expose the AI100 accelerator devices to the container for inference.
+    devices:
+      - /dev/accel:/dev/accel
+    # `docker compose run SERVICE ARGS` overrides the service command, so the
+    # launcher lives in entrypoint (final element = $0 placeholder) and any
+    # CLI flags arrive as "$@".
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        bash run_config_inference.sh env_pipeline/bin/python3 \
+          --num-warmup-iters 0 --num-repeat-iters 1 "$$@"
+        echo "[inference] image saved (host-visible): $$(pwd)/$$(ls -1t images/*.jpg | head -1)"
+      - bash
+    command: []

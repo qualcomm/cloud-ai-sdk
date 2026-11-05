@@ -1,0 +1,49 @@
+{
+    "search-mode": "optimized",
+    "objective": "max-throughput",
+    "max-evaluations": 2,
+    "search-parameters": {
+        "cores": {
+            "min": 1,
+            "max": 16
+        },
+        "mos": {
+            "min": 1,
+            "max": 4
+        },
+        "ols": {
+            "min": 1,
+            "max": 4
+        },
+        "batch-size": {
+            "min": 1,
+            "max": 8
+        },
+        "instances": {
+            "min": 1,
+            "max": 16
+        },
+        "set-size": {
+            "min": 1,
+            "max": 10
+        }
+    },
+    "initial-values": [
+        {
+            "cores": 2,
+            "mos": 1,
+            "ols": 1,
+            "batch-size": 1,
+            "instances": 8,
+            "set-size": 1
+        },
+        {
+            "cores": 8,
+            "mos": 1,
+            "ols": 1,
+            "batch-size": 1,
+            "instances": 2,
+            "set-size": 1
+        }
+    ]
+}

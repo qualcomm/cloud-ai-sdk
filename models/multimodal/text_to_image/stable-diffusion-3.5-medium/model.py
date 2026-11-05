@@ -13,7 +13,7 @@ class QAICStableDiffusion3:
         transformer = './qpc/transformer_64b_1024i_16c_1b_1m_2o/programqpc.bin'
         text_encoder_2 = './qpc/text_encoder_2_64b_1024i_16c_1b/programqpc.bin'
 
-        text_encoder_3 = None
+        text_encoder_3 = './qpc/text_encoder_3_64b_1024i_16c_1b/programqpc.bin'
 
         # check the QPCs
         transformer_qpc = transformer if transformer.endswith('programqpc.bin') else os.path.join(transformer,'programqpc.bin')

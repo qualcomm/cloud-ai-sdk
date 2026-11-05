@@ -10,22 +10,31 @@ Download the DETR-ResNet50 model, prepare for the Qualcomm AIC100, compile the m
 This model is an implementation of DETR-ResNet50 found at (https://github.com/facebookresearch/detr).
 
 
-## Virtual environment
+## Environment setup
 ---
-For a quick environment setup:
+Run these commands from the DETR tutorial directory. Use the SDK 1.23.2.0
+container or a host environment with the matching Cloud AI SDK installed.
 
-```commandline
-python3.8 -m venv cv_workflow_env
+```bash
+cd tutorials/Computer-Vision/DETR
+python3.12 -m venv cv_workflow_env
 source cv_workflow_env/bin/activate
-pip install --upgrade pip
-
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
-## Framework and version
+The notebook also requires access to the SDK tools and a Cloud AI device. It
+uses the SDK-shipped `qaic-pytools` model preparator and
+`/opt/qti-aic/exec/qaic-compile`.
+
+## Launch the notebook
 ---
-```commandline
-pip install torch==2.4.1+cpu torchvision==0.19.1+cpu --index-url https://download.pytorch.org/whl/cpu
-pip install numpy==1.24.4 onnx==1.17.0 pillow==10.4.0 requests==2.32.3 notebook==7.3.3 matplotlib==3.7.5 scipy==1.10.1
+With `cv_workflow_env` active, start Jupyter from the same directory:
 
+```commandline
+jupyter notebook --no-browser --ip=0.0.0.0 --port=8888 --allow-root
 ```
+
+Open the URL printed by Jupyter. When running remotely or in a container,
+forward or expose port `8888` to the machine where the browser is running.
 

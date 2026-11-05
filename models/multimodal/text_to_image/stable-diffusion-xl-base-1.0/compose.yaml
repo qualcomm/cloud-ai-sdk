@@ -1,0 +1,95 @@
+####################################################################################################
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+####################################################################################################
+
+# Stable Diffusion XL container workflow (Cloud AI SDK 1.23)
+#
+#   docker compose build
+#   docker compose run --rm export
+#   docker compose run --rm inference --prompt <prompt_in_quotes> --negative_prompt <prompt_in_quotes>
+#
+# `export` follows README steps 2.4-2.9 and part 3: generate text-encoder and
+# UNet ONNX (block size 256 sed between the bs2 and bs1 exports), fetch the
+# VAE decoder (a direct download replaces the README's git clone + git-lfs
+# pull), fix its FP16 overflow, then run compile_models.sh (five QPCs).
+# `inference` follows README part 4 on one device (UNet = batchsize-2 QPC);
+# --prompt and --negative_prompt are both required, and it writes one image by
+# default (add --num_warmup_iters 3 --num_repeat_iters 10 for the full
+# benchmark). Extra flags after `inference` are passed through to run_sdxl.py;
+# later flags win. `export` takes no flags.
+#
+# Results persist in this recipe folder on the host: hf_home/, HF_repo/,
+# onnx_files/, qpc/, compile_logs/, images/.
+services:
+  export:
+    build:
+      context: .
+      target: export
+    image: sdxl-export
+    working_dir: /opt/recipe
+    volumes: &persist
+      - ./hf_home:/opt/recipe/hf_home
+      - ./HF_repo:/opt/recipe/HF_repo
+      - ./onnx_files:/opt/recipe/onnx_files
+      - ./qpc:/opt/recipe/qpc
+      - ./compile_logs:/opt/recipe/compile_logs
+      - ./images:/opt/recipe/images
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        export HF_HOME=$$(pwd)/hf_home
+        VAE=HF_repo/stabilityai/stable-diffusion-xl-base-1.0/vae_decoder/model.onnx
+        if [ ! -f "$$VAE" ]; then
+          echo "[export] fetching SDXL VAE decoder to $$VAE"
+          mkdir -p "$$(dirname "$$VAE")"
+          curl -fL --retry 3 -o "$$VAE" \
+            "https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/vae_decoder/model.onnx"
+        fi
+        python generate_onnx_files.py onnx_files/ --export_text_encoder --export_text_encoder_2
+        python generate_onnx_files.py onnx_files/unet_bs2/ --export_unet
+        echo "[export] setting block size 256 for the batchsize-1 UNet (README step 2.6)"
+        sed -i 's/query_block_size = 128/query_block_size = 256/g' \
+          ./env_sdxl_onnxgen/lib/python3.12/site-packages/diffusers/models/attention_processor.py
+        python generate_onnx_files.py onnx_files/unet_bs1/ --export_unet
+        python fix_vae_decoder_onnx.py --scaling-factor 128 --model-path "$$VAE"
+        mkdir -p onnx_files/vae_decoder
+        mv "$$(dirname "$$VAE")/model_fixed_128.onnx" onnx_files/vae_decoder/
+        bash compile_models.sh
+        echo "[export] complete; host outputs in hf_home/, HF_repo/, onnx_files/, qpc/, compile_logs/"
+  inference:
+    build:
+      context: .
+      target: pipeline
+    image: sdxl-pipeline
+    working_dir: /opt/recipe
+    volumes: *persist
+    # Expose the AI100 accelerator devices to the container for inference.
+    devices:
+      - /dev/accel:/dev/accel
+    # `docker compose run SERVICE ARGS` overrides the service command, so the
+    # launcher lives in entrypoint (final element = $0 placeholder) and any
+    # CLI flags arrive as "$@".
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        export HF_HOME=$$(pwd)/hf_home
+        # run_sdxl.py requires both prompts; fail fast with usage instead of
+        # baking sample prompt text into committed content.
+        [[ " $$* " == *" --prompt "* && " $$* " == *" --negative_prompt "* ]] || \
+          { echo "[inference] usage: docker compose run --rm inference --prompt <prompt_in_quotes> --negative_prompt <prompt_in_quotes>"; exit 1; }
+        env_sdxl_infer/bin/python3 run_sdxl.py \
+          --device_id 0 \
+          --text_encoder ./qpc/text_encoder \
+          --text_encoder_2 ./qpc/text_encoder_2 \
+          --unet ./qpc/unet-bs2 \
+          --vae_decoder ./qpc/vae_decoder \
+          --num_warmup_iters 0 --num_repeat_iters 1 \
+          "$$@"
+        echo "[inference] image saved (host-visible): $$(pwd)/$$(ls -1t images/*.jpg | head -1)"
+      - bash
+    command: []

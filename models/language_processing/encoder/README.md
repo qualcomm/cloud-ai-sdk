@@ -4,7 +4,7 @@ This document runs a script (run_nlp_model.py) to benchmark encoder-type NLP mod
 
 ## Efficient Transformers
 ---
-Support for embedding models is now available in the Qualcomm efficient-transformers library.  Refer to [link](https://quic.github.io/efficient-transformers/source/validate.html#embedding-models) for more details.
+Support for embedding models is now available in the Qualcomm efficient-transformers library.  Refer to [link](https://qualcomm.github.io/efficient-transformers/source/validate.html#embedding-models) for more details.
 
 ## Source of the models
 ---
@@ -105,7 +105,7 @@ The models are downloaded from (https://huggingface.co). This script has been te
 For a quick environment setup:
 
 ```commandline
-python3.10 -m venv nlp_env
+python3.12 -m venv nlp_env
 source nlp_env/bin/activate
 pip3 install -r requirements.txt
 ```

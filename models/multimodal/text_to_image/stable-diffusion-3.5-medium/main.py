@@ -16,7 +16,8 @@ from onnx_generation.generate_onnx_files import convert_models
 
 def main(args):
     # check device status and cores available
-    check_device(args.device_id, args.num_cores)
+    if args.run_only:
+        check_device(args.device_id, args.num_cores)
 
     # model configs
     batch_size = args.batch_size

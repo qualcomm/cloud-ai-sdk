@@ -2,9 +2,31 @@
 
 The instructions below are to run the [SDXL-Turbo](https://huggingface.co/stabilityai/sdxl-turbo) model on Cloud AI 100. Compile time parameters may need to be adjusted for different cards and different SDKs.
 
+## Containerized workflow (recommended)
+
+Needs Docker with the Compose plugin and about 50 GB of free disk in this
+folder (ONNX models, QPCs, and downloaded weights persist here).
+
+```bash
+docker compose build
+docker compose run --rm export
+docker compose run --rm inference --prompt <prompt_in_quotes>
+```
+
+`export` downloads the model weights and runs the ONNX generation and QPC
+compilation of step 1. `inference` writes one image on device 0 (`--prompt`
+optional; `run_config_inference.sh` supplies a default if omitted); add
+`--num-warmup-iters 3 --num-repeat-iters 3` for the full benchmark. Extra
+flags after `inference` pass through to `main.py` (later flags win). See
+`compose.yaml` for details.
+
+The remaining sections describe the manual workflow for hosts without
+containers, including the REST endpoint of step 3, which the containers do
+not cover.
+
 ## Pre-requisites
 
-Use the [SDK 1.19.8.0](https://github.com/quic/cloud-ai-containers/pkgs/container/cloud_ai_inference_ubuntu22/414822849?tag=1.19.8.0) container to compile the sdxl-turbo models.
+Use the [SDK 1.23.2.0](https://github.com/qualcomm/cloud-ai-containers/pkgs/container/cloud_ai_inference_ubuntu22?tag=1.23.2.0) container to compile the sdxl-turbo models.
 
 ```
 sudo docker run \
@@ -17,7 +39,7 @@ sudo docker run \
   --device=/dev/accel/accel1 \
   --device=/dev/accel/accel2 \
   --device=/dev/accel/accel3 \
-  ghcr.io/quic/cloud_ai_inference_ubuntu22:1.19.8.0
+  ghcr.io/qualcomm/cloud_ai_inference_ubuntu22:1.23.2.0
 
 cd models/multimodal/text_to_image/sdxl_turbo
 ```
@@ -39,7 +61,7 @@ sudo apt-get install git-lfs
 
 1.  Set up a virtual environment for ONNX generation and compilation
 ```
-python3.10 -m venv env_onnx
+python3.12 -m venv env_onnx
 source ./env_onnx/bin/activate
 pip install -r requirements.txt
 ```
@@ -81,7 +103,7 @@ bash run_config_gen.sh
 
 1. Set up a separate virtual environment for running SDXL Turbo
 ```
-python3.10 -m venv env_pipeline
+python3.12 -m venv env_pipeline
 source ./env_pipeline/bin/activate
 pip install -r requirements.txt
 pip install --force-reinstall /opt/qti-aic/dev/lib/x86_64/qaic-0.0.1-py3-none-any.whl
@@ -96,12 +118,12 @@ pip install .
 cd ..
 ```
 
-4. Run the SDXL-Turbo inference with 'sudo' flag if needed to access the AI 100 devices.
+3. Run the SDXL-Turbo inference on AI 100 devices.
 ```
-sudo bash run_config_inference.sh $(which python3)
+bash run_config_inference.sh $(which python3)
 ```
 
-## 3. Run an OpenAI-compatible REST endpoint
+## 3. Start an OpenAI-compatible REST endpoint
 
 ```
 source ./env_pipeline/bin/activate

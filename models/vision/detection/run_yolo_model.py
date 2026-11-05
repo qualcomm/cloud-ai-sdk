@@ -84,7 +84,7 @@ MODEL:
 
     '''
 
-    ### Replace the PRE_POST_HANDLE in the above string with the following to use QDETECT instead of SMARTNMS. Refer to https://quic.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Inference-Workflow/Export-the-model/Prepare-the-model/ 
+    ### Replace the PRE_POST_HANDLE in the above string with the following to use QDETECT instead of SMARTNMS. Refer to https://qualcomm.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Inference-Workflow/Export-the-model/Prepare-the-model/ 
     # PRE_POST_HANDLE:
         # ANCHOR_BIN_FILE: None
         # POST_PLUGIN: QDETECT

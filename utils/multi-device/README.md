@@ -2,7 +2,7 @@
 
 This guide provides setup instructions for multi-device enablement. PCIe peer-to-peer P2P communication must be enabled to allow efficient tensor slicing across multiple Cloud AI devices (SoCs and Cards).
 
-Refer to [Model Sharding](https://quic.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Features/model_sharding/) for more information on recommended PCIe topologies for tensor slicing (P2P).
+Refer to [Model Sharding](https://qualcomm.github.io/cloud-ai-sdk-pages/latest/Getting-Started/Features/model_sharding/) for more information on recommended PCIe topologies for tensor slicing (P2P).
 
 ## Pre-requisites 
 

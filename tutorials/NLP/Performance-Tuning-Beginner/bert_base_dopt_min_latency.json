@@ -1,7 +1,8 @@
 {
-  "max_func_eval": 200,
-  "objective": "minimize_latency",
-  "params": {
+  "search-mode": "optimized",
+  "max-evaluations": 200,
+  "objective": "min-latency",
+  "search-parameters": {
     "cores": {
       "min": 1,
       "max": 14
@@ -14,49 +15,49 @@
       "min": 1,
       "max": 8
     },
-    "bs": {
+    "batch-size": {
       "min": 1,
-      "max": 1
+      "max": 8
     },
     "instances": {
       "min": 1,
       "max": 14
     }
   },
-  "initial_values": [
+  "initial-values": [
     {
       "cores": 1,
       "mos": 1,
       "ols": 1,
-      "bs": 1,
+      "batch-size": 1,
       "instances": 1
     },
     {
       "cores": 2,
       "mos": 1,
       "ols": 1,
-      "bs": 1,
+      "batch-size": 1,
       "instances": 1
     },
     {
       "cores": 4,
       "mos": 1,
       "ols": 1,
-      "bs": 1,
+      "batch-size": 1,
       "instances": 1
     },
     {
       "cores": 7,
       "mos": 1,
       "ols": 1,
-      "bs": 1,
+      "batch-size": 1,
       "instances": 1
     },
     {
       "cores": 14,
       "mos": 1,
       "ols": 1,
-      "bs": 1,
+      "batch-size": 1,
       "instances": 1
     }
   ]
