@@ -11,28 +11,32 @@ from utils import *
 
 # checks device status and cores available
 def check_device(device_id, cores):
-    qaic_util = subprocess.run(f"sudo /opt/qti-aic/tools/qaic-util -d {device_id} -q",  shell=True, capture_output=True, text=True).stdout
     try:
-        nsp_total = int(re.findall("nsp total:\d+", qaic_util, re.IGNORECASE)[0].split(":")[-1])
-    except:
-        nsp_total = 16
-    try:
-        nsp_free = int(re.findall("nsp free:\d+", qaic_util, re.IGNORECASE)[0].split(":")[-1])
-    except:
-        nsp_free = 16
-    try:
-        status = re.findall("status:.+", qaic_util, re.IGNORECASE)[0].split(":")[-1].lower()
-    except:
-        status = 'ready'
+        result = subprocess.run(
+            ["/opt/qti-aic/tools/qaic-util", "-d", str(device_id), "-q"],
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        raise RuntimeError(f"Unable to query device {device_id}: {exc}") from exc
 
-    if (status != 'ready'):
-        raise TypeError(
-            'Device {} not ready'.format(device_id))
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f"Device {device_id} query failed: {detail}")
 
-    if (nsp_free < cores):
-        raise TypeError(
-            'Insufficient resources: {} NSP cores required, {} available'.format(cores, nsp_free))
-    return
+    free_match = re.search(r"nsp\s+free:\s*(\d+)", result.stdout, re.IGNORECASE)
+    status_match = re.search(r"status:\s*([^\r\n]+)", result.stdout, re.IGNORECASE)
+    if free_match is None or status_match is None:
+        raise RuntimeError(f"Cannot parse readiness for device {device_id}")
+
+    nsp_free = int(free_match.group(1))
+    status = status_match.group(1).strip().lower()
+    if status != "ready":
+        raise RuntimeError(f"Device {device_id} not ready: {status}")
+    if nsp_free < cores:
+        raise RuntimeError(
+            f"Insufficient resources: {cores} NSP cores required, {nsp_free} available"
+        )
 
 def map2device(
      binary_dir = "./qpc/",

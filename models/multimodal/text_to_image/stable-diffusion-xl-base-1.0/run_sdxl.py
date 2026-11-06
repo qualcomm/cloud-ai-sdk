@@ -50,7 +50,8 @@ if __name__ == "__main__":
         assert os.path.isfile(args.use_latents), f"Could not find latents file {args.use_latents}"
         assert args.use_latents.endswith('.pt') or args.use_latents.endswith('.npy'), f"use_latents should be a .pt or .npy file - found {args.use_latents}!"
         if args.use_latents.endswith('.pt'):
-            latents = torch.load(args.use_latents)
+            # nosemgrep: trailofbits.python.pickles-in-pytorch.pickles-in-pytorch -- latents are tensor data; restricted loading disallows arbitrary globals.
+            latents = torch.load(args.use_latents, weights_only=True)
         elif args.use_latents.endswith('.npy'):
             latents = torch.Tensor(np.load(args.use_latents))
         assert latents.shape == (1,4,128,128), f"Latents should have shape (1,4,128,128), found {latents.shape = }"

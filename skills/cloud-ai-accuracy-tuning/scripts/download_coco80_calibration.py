@@ -36,11 +36,11 @@ from pathlib import Path
 
 import numpy as np
 import requests
-import urllib3
 from PIL import Image
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-_GET = lambda url, **kw: requests.get(url, verify=False, **kw)
+# Requests verifies HTTPS certificates by default. For TLS-inspecting proxies,
+# set REQUESTS_CA_BUNDLE to the proxy CA bundle.
+_GET = requests.get
 
 COCO_VAL_URL = "http://images.cocodataset.org/zips/val2017.zip"
 

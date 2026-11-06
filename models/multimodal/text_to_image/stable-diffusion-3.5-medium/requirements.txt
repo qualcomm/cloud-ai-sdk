@@ -25,12 +25,12 @@ PyYAML==6.0.1
 regex==2024.5.15
 requests==2.32.3
 safetensors==0.4.3
-sympy==1.12
+sympy==1.13.3
 tokenizers==0.19.1
-torch==2.4.1
+torch==2.7.0
 tqdm==4.66.4
 transformers==4.41.2
-typing-extensions==4.9.0
+typing-extensions==4.12.2
 urllib3==2.2.2
 zipp==3.19.2
 onnxsim==0.7.3

@@ -1,12 +1,37 @@
 # Basic Commands/Utilities for Cloud AI 100 devices 
 
-## Create `qaic` group to avoid `sudo` to read card/device status
+## Containers with `qaic-container`
 
+`qaic-container` runs Docker Compose with `HOST_UID`, `HOST_GID`, and
+`QAIC_GID` populated from your host account and `qaic` group. Compose files
+choose how to use these values to configure their users and groups. Docker
+with the Compose plugin and the Platform SDK driver are required.
+
+Add `utils/` to your shell's PATH from the repository root:
+
+```bash
+export PATH="$PWD/utils:$PATH"
 ```
-sudo usermod -aG qaic $USER
-newgrp qaic
-bash
+
+Use normal Compose commands from the directory containing your Compose file:
+
+```bash
+qaic-container build
+qaic-container run --rm SERVICE
 ```
+
+Compose options such as `-f` and `--project-directory` pass through unchanged.
+Follow each recipe's instructions to prepare directories and select services.
+
+## Add your host account to `qaic` for direct device access
+
+For host device access without `sudo`, add yourself to the `qaic` group:
+
+```bash
+sudo usermod -aG qaic "$USER"
+```
+
+Log out and log back in to apply the membership.
 
 ## Check device health 
 Monitor the health of all AI 100 devices (SoCs) using the `qaic-util` utility. 

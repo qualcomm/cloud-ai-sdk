@@ -46,13 +46,11 @@ from pathlib import Path
 
 import numpy as np
 import requests
-import urllib3
 from PIL import Image
 
-# Corporate proxies that perform TLS inspection present a self-signed cert.
-# Disable SSL verification globally for this download script.
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-_GET = lambda url, **kw: requests.get(url, verify=False, **kw)
+# Requests verifies HTTPS certificates by default. For TLS-inspecting proxies,
+# set REQUESTS_CA_BUNDLE to the proxy CA bundle.
+_GET = requests.get
 
 # ── Preprocessing ────────────────────────────────────────────────────────────
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)

@@ -5,9 +5,11 @@
 
 # SDXL DeepCache container workflow (Cloud AI SDK 1.23)
 #
-#   docker compose build
-#   docker compose run --rm export
-#   docker compose run --rm inference --prompt <prompt_in_quotes>
+# With utils/ on PATH, from this recipe directory:
+#   mkdir -p cache onnx_files qpc compile_logs images
+#   qaic-container build
+#   qaic-container run --rm export
+#   qaic-container run --rm inference --prompt "<your prompt>"
 #
 # `export` follows README steps 5-8: fetch the VAE decoder, run
 # run_config_deep.sh (ONNX + QPC compile, block size 256), apply the
@@ -24,14 +26,38 @@ services:
     build:
       context: .
       target: export
-    image: sdxl-deepcache-export
+      args: &identity
+        HOST_UID: ${HOST_UID:?Use qaic-container to set host identity}
+        HOST_GID: ${HOST_GID:?Use qaic-container to set host identity}
+        QAIC_GID: ${QAIC_GID:?Use qaic-container to set host identity}
+    image: sdxl-deepcache-export:${HOST_UID:?Use qaic-container}-${HOST_GID:?Use qaic-container}-${QAIC_GID:?Use qaic-container}
     working_dir: /opt/recipe
     volumes: &persist
-      - ./cache:/opt/recipe/cache
-      - ./onnx_files:/opt/recipe/onnx_files
-      - ./qpc:/opt/recipe/qpc
-      - ./compile_logs:/opt/recipe/compile_logs
-      - ./images:/opt/recipe/images
+      - type: bind
+        source: ./cache
+        target: /opt/recipe/cache
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./onnx_files
+        target: /opt/recipe/onnx_files
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./qpc
+        target: /opt/recipe/qpc
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./compile_logs
+        target: /opt/recipe/compile_logs
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./images
+        target: /opt/recipe/images
+        bind:
+          create_host_path: false
     command:
       - bash
       - -c
@@ -53,9 +79,12 @@ services:
     build:
       context: .
       target: pipeline
-    image: sdxl-deepcache-pipeline
+      args: *identity
+    image: sdxl-deepcache-pipeline:${HOST_UID:?Use qaic-container}-${HOST_GID:?Use qaic-container}-${QAIC_GID:?Use qaic-container}
     working_dir: /opt/recipe
     volumes: *persist
+    group_add:
+      - "${QAIC_GID:?Use qaic-container to set host identity}"
     # Expose the AI100 accelerator devices to the container for inference.
     devices:
       - /dev/accel:/dev/accel

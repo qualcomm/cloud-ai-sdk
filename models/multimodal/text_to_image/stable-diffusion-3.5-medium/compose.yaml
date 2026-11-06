@@ -5,9 +5,11 @@
 
 # SD3.5-medium container workflow (Cloud AI SDK 1.23)
 #
-#   docker compose build
-#   docker compose run --rm export
-#   docker compose run --rm inference --prompt <prompt_in_quotes> --neg_prompt <prompt_in_quotes>
+# With utils/ on PATH, from this recipe directory:
+#   mkdir -p cache onnx_files qpc compile_logs images
+#   qaic-container build
+#   qaic-container run --rm export
+#   qaic-container run --rm inference --prompt "<your prompt>" --neg_prompt "<your negative prompt>"
 #
 # `export` follows README section 2: generate the ONNX models (CLIP text
 # encoders, T5 text_encoder_3, transformer, VAE decoder) and compile all QPCs.
@@ -30,14 +32,38 @@ services:
     build:
       context: .
       target: export
-    image: sd35-export
+      args: &identity
+        HOST_UID: ${HOST_UID:?Use qaic-container to set host identity}
+        HOST_GID: ${HOST_GID:?Use qaic-container to set host identity}
+        QAIC_GID: ${QAIC_GID:?Use qaic-container to set host identity}
+    image: sd35-export:${HOST_UID:?Use qaic-container}-${HOST_GID:?Use qaic-container}-${QAIC_GID:?Use qaic-container}
     working_dir: /opt/recipe
     volumes: &persist
-      - ./cache:/opt/recipe/cache
-      - ./onnx_files:/opt/recipe/onnx_files
-      - ./qpc:/opt/recipe/qpc
-      - ./compile_logs:/opt/recipe/compile_logs
-      - ./images:/opt/recipe/images
+      - type: bind
+        source: ./cache
+        target: /opt/recipe/cache
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./onnx_files
+        target: /opt/recipe/onnx_files
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./qpc
+        target: /opt/recipe/qpc
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./compile_logs
+        target: /opt/recipe/compile_logs
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./images
+        target: /opt/recipe/images
+        bind:
+          create_host_path: false
       # HF_HOME=cache makes Hugging Face read the token from cache/token.
       - ~/.cache/huggingface/token:/opt/recipe/cache/token:ro
     command:
@@ -55,9 +81,12 @@ services:
     build:
       context: .
       target: pipeline
-    image: sd35-pipeline
+      args: *identity
+    image: sd35-pipeline:${HOST_UID:?Use qaic-container}-${HOST_GID:?Use qaic-container}-${QAIC_GID:?Use qaic-container}
     working_dir: /opt/recipe
     volumes: *persist
+    group_add:
+      - "${QAIC_GID:?Use qaic-container to set host identity}"
     # Expose the AI100 accelerator devices to the container for inference.
     devices:
       - /dev/accel:/dev/accel
@@ -75,7 +104,7 @@ services:
         # the empty positional defaults below are overridden by the user's
         # later --prompt / --neg_prompt flags (last-flag-wins passthrough).
         [[ " $$* " == *" --prompt "* && " $$* " == *" --neg_prompt "* ]] || \
-          { echo "[inference] usage: docker compose run --rm inference --prompt <prompt_in_quotes> --neg_prompt <prompt_in_quotes>"; exit 1; }
+          { echo "[inference] usage: qaic-container run --rm inference --prompt <prompt_in_quotes> --neg_prompt <prompt_in_quotes>"; exit 1; }
         bash run_config_inference.sh "" "" \
           --num-warmup-iters 0 --num-repeat-iters 1 "$$@"
         echo "[inference] image saved (host-visible): $$(pwd)/$$(ls -1t images/*.jpg | head -1)"

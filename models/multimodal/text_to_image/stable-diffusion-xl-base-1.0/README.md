@@ -12,12 +12,23 @@ The instructions below are to run [the Stable Diffusion XL model](stabilityai/st
 
 Needs Docker with the Compose plugin and about 50 GB of free disk in this
 folder (ONNX models, QPCs, and downloaded weights persist here).
+The Platform SDK driver must be installed on the host.
 
+From the repository root, add [qaic-container](../../../../utils/README.md) to
+PATH, then prepare this recipe's output directories:
 ```bash
-docker compose build
-docker compose run --rm export
-docker compose run --rm inference --prompt <prompt_in_quotes> --negative_prompt <prompt_in_quotes>
+export PATH="$PWD/utils:$PATH"
+cd models/multimodal/text_to_image/stable-diffusion-xl-base-1.0
+mkdir -p hf_home HF_repo onnx_files qpc compile_logs images
+qaic-container build
+qaic-container run --rm export
+qaic-container run --rm inference --prompt "<your prompt>" --negative_prompt "<your negative prompt>"
 ```
+
+The containers run as your host user and receive the host's `qaic` GID for
+device access. Existing output directories must be writable by your account.
+Re-run `qaic-container build` after changing the recipe or switching hosts or
+users.
 
 `export` covers parts 2 and 3 below: ONNX generation (fetching the fixed VAE
 decoder file if absent) and all five QPC compiles. `inference` runs part 4 on
@@ -158,7 +169,18 @@ pip install .
 cd ..
 ```
 
-4. Run the SDXL inference with 'sudo' flag if needed to access the AI 100 devices. The `text_encoder`, `text_encoder_2`, and `vae_decoder` binaries are the same whether running on 1 device or 2 devices. You can pass in `--use_latents latents.pt` argument to use a pre-defined latents PyTorch file
+4. Run the SDXL inference on AI 100 devices.
+
+For host inference without `sudo`, add yourself to the `qaic` group:
+
+```
+sudo usermod -aG qaic "$USER"
+```
+
+Log out and log back in to apply the membership. The `text_encoder`,
+`text_encoder_2`, and `vae_decoder` binaries are the same whether running on
+1 device or 2 devices. You can pass in `--use_latents latents.pt` argument to
+use a pre-defined latents PyTorch file.
 
 
 For running on 1 device, pass in `device_id` argument, and `unet` argument point to the batchsize=2 QPC

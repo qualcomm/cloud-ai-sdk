@@ -224,7 +224,7 @@ def convert_models(
         
         if export_text_encoder_3:
             start_time = time.perf_counter()
-            export_t5(block_size, image_size, opset)
+            export_t5(model_path, block_size, image_size, opset)
             print(f"Completed Text Encoder 3 ONNX export in {time.perf_counter() - start_time:.2f} seconds")
         else:
             print(f"Not exporting Text Encoder 3 ONNX file")
