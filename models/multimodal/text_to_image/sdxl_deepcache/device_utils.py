@@ -14,23 +14,32 @@ from utils import *
 
 # checks device status and cores available
 def check_device(device_id, cores):
-    qaic_util = subprocess.run(f"sudo /opt/qti-aic/tools/qaic-util -d {device_id} -q",  shell=True, capture_output=True, text=True).stdout
     try:
-        nsp_total = int(re.findall("nsp total:\d+", qaic_util, re.IGNORECASE)[0].split(":")[-1])
-    except:
-        nsp_total = 14
-    try:
-        nsp_free = int(re.findall("nsp free:\d+", qaic_util, re.IGNORECASE)[0].split(":")[-1])
-    except:
-        nsp_free = 14
-    try:
-        status = re.findall("status:.+", qaic_util, re.IGNORECASE)[0].split(":")[-1].lower()
-    except:
-        status = 'ready'
-    if (nsp_free < cores or status != 'ready'):
-        raise TypeError(
-            'the device is not ready. please try, sudo sh -c "echo 1 > /sys/bus/mhi/devices/mhi0/soc_reset", or restart.')
-    return
+        result = subprocess.run(
+            ["/opt/qti-aic/tools/qaic-util", "-d", str(device_id), "-q"],
+            capture_output=True,
+            text=True,
+        )
+    except OSError as exc:
+        raise RuntimeError(f"Unable to query device {device_id}: {exc}") from exc
+
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f"Device {device_id} query failed: {detail}")
+
+    free_match = re.search(r"nsp\s+free:\s*(\d+)", result.stdout, re.IGNORECASE)
+    status_match = re.search(r"status:\s*([^\r\n]+)", result.stdout, re.IGNORECASE)
+    if free_match is None or status_match is None:
+        raise RuntimeError(f"Cannot parse readiness for device {device_id}")
+
+    nsp_free = int(free_match.group(1))
+    status = status_match.group(1).strip().lower()
+    if status != "ready":
+        raise RuntimeError(f"Device {device_id} not ready: {status}")
+    if nsp_free < cores:
+        raise RuntimeError(
+            f"Insufficient resources: {cores} NSP cores required, {nsp_free} available"
+        )
 
 
 def map2device(
@@ -173,7 +182,8 @@ def benchmark(
         assert os.path.isfile(use_latents), f"Could not find latents file {use_latents}"
         assert use_latents.endswith('.pt') or use_latents.endswith('.npy'), f"use_latents should be a .pt or .npy file - found {use_latents}!"
         if use_latents.endswith('.pt'):
-            latents = torch.load(use_latents)
+            # nosemgrep: trailofbits.python.pickles-in-pytorch.pickles-in-pytorch -- latents are tensor data; restricted loading disallows arbitrary globals.
+            latents = torch.load(use_latents, weights_only=True)
         elif ause_latents.endswith('.npy'):
             latents = torch.Tensor(np.load(use_latents))
         assert latents.shape == (1,4,128,128), f"Latents should have shape (1,4,128,128), found {latents.shape = }"

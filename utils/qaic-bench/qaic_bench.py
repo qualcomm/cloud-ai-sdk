@@ -22,6 +22,7 @@ import multiprocessing
 from multiprocessing.managers import BaseManager
 
 from datetime import datetime
+from safe_tar import safe_extract_tar
 from QEfficient import QEFFAutoModelForCausalLM
 from huggingface_hub import login
 from tempfile import NamedTemporaryFile
@@ -452,7 +453,7 @@ def qpc_download(url):
                 os.makedirs(tar_root)
             print('Extracting {}'.format(destination))
             with tarfile.open(destination, "r:*") as tar:
-                tar.extractall(path=tar_root)
+                safe_extract_tar(tar, tar_root)
             print('Files extracted')
             with open(qpc_root / 'extracted', 'w') as f:
                 pass

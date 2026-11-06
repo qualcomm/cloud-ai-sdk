@@ -224,9 +224,9 @@ def run_model_on_ort(
     return input_names, ort_outputs
 
 
-def export_t5(block_size, image_size, opset):
+def export_t5(model_path, block_size, image_size, opset):
     # Load tokenizer and model
-    pipeline = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers", low_cpu_mem_usage=False)
+    pipeline = StableDiffusion3Pipeline.from_pretrained(model_path, low_cpu_mem_usage=False)
     tokenizer = pipeline.tokenizer_3
     model = pipeline.text_encoder_3
     model.eval()

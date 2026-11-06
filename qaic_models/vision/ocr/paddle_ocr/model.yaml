@@ -1,3 +1,5 @@
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 id: paddle-ocr
 display_name: PaddleOCR PP-DocLayoutV3 + PP-OCRv6
 aliases: [pp-ocrv6-medium, pp-ocrv6]

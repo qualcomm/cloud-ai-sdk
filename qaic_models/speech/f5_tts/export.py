@@ -126,6 +126,7 @@ def export_onnx(f5_tts_src, work_dir, *, model="F5TTS_v1_Base", ckpt_dir=None):
             from safetensors.torch import load_file
             checkpoint = load_file(str(ckpt_path), device=device)
         else:
+            # nosemgrep: trailofbits.python.pickles-in-pytorch.pickles-in-pytorch -- weights_only=True refuses pickle payloads (tensors/containers only).
             checkpoint = torch.load(str(ckpt_path), map_location=device, weights_only=True)
 
         if use_ema:
@@ -148,10 +149,8 @@ def export_onnx(f5_tts_src, work_dir, *, model="F5TTS_v1_Base", ckpt_dir=None):
     def load_vocos_model(model_dir):
         model_dir = Path(model_dir)
         vocos_model = Vocos.from_hparams(str(model_dir / "config.yaml"))
-        try:
-            state_dict = torch.load(model_dir / "pytorch_model.bin", map_location="cpu", weights_only=True)
-        except TypeError:
-            state_dict = torch.load(model_dir / "pytorch_model.bin", map_location="cpu")
+        # nosemgrep: trailofbits.python.pickles-in-pytorch.pickles-in-pytorch -- weights_only=True refuses pickle payloads (tensors/containers only).
+        state_dict = torch.load(model_dir / "pytorch_model.bin", map_location="cpu", weights_only=True)
         vocos_model.load_state_dict(state_dict)
         vocos_model.eval()
         return vocos_model

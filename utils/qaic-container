@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
+
+set -euo pipefail
+
+usage() {
+    echo 'Usage: qaic-container [COMPOSE_OPTIONS] COMMAND [ARGS...]'
+    echo
+    echo 'Run Docker Compose with HOST_UID, HOST_GID, and QAIC_GID set from the host.'
+    echo 'Projects, services, volumes, and build options are supplied by the caller.'
+}
+
+fail() {
+    echo "qaic-container: $*" >&2
+    exit 1
+}
+
+if [[ ${1:-} == --help || ${1:-} == -h ]]; then
+    usage
+    exit 0
+fi
+if (( $# == 0 )); then
+    usage >&2
+    exit 2
+fi
+
+command -v docker >/dev/null || fail 'Docker with the Compose plugin is required.'
+HOST_UID=$(id -u)
+HOST_GID=$(id -g)
+QAIC_GID=$(getent group qaic | cut -d: -f3) || fail 'The host qaic group is missing. Install the Platform SDK driver.'
+export HOST_UID HOST_GID QAIC_GID
+for value in "$HOST_UID" "$HOST_GID" "$QAIC_GID"; do
+    [[ $value =~ ^[0-9]+$ && $value -gt 0 ]] || fail 'A non-root host user and a valid qaic group are required.'
+done
+
+exec docker compose "$@"

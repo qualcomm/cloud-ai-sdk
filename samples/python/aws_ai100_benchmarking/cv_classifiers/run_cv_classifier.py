@@ -104,7 +104,11 @@ def execute(cmd_elements, write_to_file, mode):
 # checks device status and cores available
 def check_device(DEVICE_ID, CORES, INSTANCES):
 
-    QAIC_UTIL = subprocess.run(f"/opt/qti-aic/tools/qaic-util -d {DEVICE_ID} -q",  shell=True, capture_output=True, text=True).stdout
+    QAIC_UTIL = subprocess.run(
+        ["/opt/qti-aic/tools/qaic-util", "-d", str(DEVICE_ID), "-q"],
+        capture_output=True,
+        text=True,
+    ).stdout
 
     try:
         NSP_TOTAL = int(QAIC_UTIL.split("Nsp Total:")[1].split()[0])

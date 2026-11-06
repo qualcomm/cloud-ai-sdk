@@ -7,8 +7,8 @@
 
 --extra-index-url https://download.pytorch.org/whl/cpu
 
-torch==2.4.1+cpu
-torchvision==0.19.1+cpu
+torch==2.7.0+cpu
+torchvision==0.22.0+cpu
 numpy==1.26.4
 onnx==1.18.0
 pillow==10.4.0

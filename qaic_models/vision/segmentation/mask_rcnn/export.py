@@ -11,7 +11,7 @@ import subprocess
 import sys
 from contextlib import ExitStack
 from dataclasses import dataclass
-from importlib import resources
+from importlib import resources  # nosemgrep: python.lang.compatibility.python37.python37-compatibility-importlib2 -- repo requires Python 3.10/3.12; the py3.7-compat rule does not apply.
 from pathlib import Path
 from typing import Optional
 

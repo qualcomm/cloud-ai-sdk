@@ -16,10 +16,11 @@
 # only the output folders (cache/, onnx_files/, qpc/, compile_logs/, images/),
 # so results persist on the host while the venvs stay in the image layer.
 #
-# Recommended entry point is the bundled compose launcher:
-#   docker compose build
-#   docker compose run --rm export
-#   docker compose run --rm inference --prompt <prompt_in_quotes>
+# With utils/ on PATH, from this recipe directory:
+#   mkdir -p cache onnx_files qpc compile_logs images
+#   qaic-container build
+#   qaic-container run --rm export
+#   qaic-container run --rm inference --prompt "<your prompt>"
 FROM ghcr.io/qualcomm/cloud_ai_inference_ubuntu24:1.23.2.0 AS recipe-base
 
 WORKDIR /opt/recipe
@@ -28,6 +29,10 @@ COPY requirements.txt ./
 
 # ---- export env (README part 1) ----
 FROM recipe-base AS export
+# moreutils provides `ts`, which utils.execute pipes qaic-compile output through.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends moreutils \
+ && rm -rf /var/lib/apt/lists/*
 # python3.12 ships inside /opt/venv_py312 in the SDK image; build a fresh env.
 RUN /opt/venv_py312/bin/python -m venv env_onnx
 ENV VIRTUAL_ENV=/opt/recipe/env_onnx
@@ -39,7 +44,28 @@ RUN git clone --depth 1 --branch v0.24.0 https://github.com/huggingface/diffuser
  && git apply --reject --whitespace=fix ../patches/attention_patch.patch \
  && pip install --no-cache-dir . \
  && cd ..
-COPY . .
+ARG HOST_UID
+ARG HOST_GID
+ARG QAIC_GID
+COPY --chown=${HOST_UID}:${HOST_GID} . .
+RUN set -eux; \
+    ! getent passwd recipe; \
+    ! getent group recipe; \
+    for value in "$HOST_UID" "$HOST_GID" "$QAIC_GID"; do \
+      case "$value" in ''|*[!0-9]*) exit 1 ;; esac; \
+      test "$value" -gt 0; \
+    done; \
+    if getent group qaic >/dev/null; then \
+      groupmod -o -g "$QAIC_GID" qaic; \
+    else \
+      groupadd -o -g "$QAIC_GID" qaic; \
+    fi; \
+    groupadd -o -g "$HOST_GID" recipe; \
+    useradd -o -u "$HOST_UID" -g recipe -G qaic \
+      -m -d /home/recipe -s /bin/bash recipe; \
+    chown "$HOST_UID:$HOST_GID" /opt/recipe /home/recipe
+ENV HOME=/home/recipe
+USER recipe
 CMD ["bash"]
 
 # ---- pipeline/inference env (README part 2) ----
@@ -55,5 +81,26 @@ RUN git clone --depth 1 --branch v0.24.0 https://github.com/huggingface/diffuser
  && git apply --reject --whitespace=fix ../patches/pipeline_patch_separate.patch \
  && pip install --no-cache-dir . \
  && cd ..
-COPY . .
+ARG HOST_UID
+ARG HOST_GID
+ARG QAIC_GID
+COPY --chown=${HOST_UID}:${HOST_GID} . .
+RUN set -eux; \
+    ! getent passwd recipe; \
+    ! getent group recipe; \
+    for value in "$HOST_UID" "$HOST_GID" "$QAIC_GID"; do \
+      case "$value" in ''|*[!0-9]*) exit 1 ;; esac; \
+      test "$value" -gt 0; \
+    done; \
+    if getent group qaic >/dev/null; then \
+      groupmod -o -g "$QAIC_GID" qaic; \
+    else \
+      groupadd -o -g "$QAIC_GID" qaic; \
+    fi; \
+    groupadd -o -g "$HOST_GID" recipe; \
+    useradd -o -u "$HOST_UID" -g recipe -G qaic \
+      -m -d /home/recipe -s /bin/bash recipe; \
+    chown "$HOST_UID:$HOST_GID" /opt/recipe /home/recipe
+ENV HOME=/home/recipe
+USER recipe
 CMD ["bash"]

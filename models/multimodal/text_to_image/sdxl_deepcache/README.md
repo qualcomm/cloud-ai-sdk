@@ -10,12 +10,23 @@ The instructions below are to run the [Stable Diffusion XL model](https://huggin
 
 Needs Docker with the Compose plugin and about 50 GB of free disk in this
 folder (ONNX models, QPCs, and downloaded weights persist here).
+The Platform SDK driver must be installed on the host.
+
+From the repository root, add [qaic-container](../../../../utils/README.md)
+to PATH and prepare this recipe's output directories:
 
 ```bash
-docker compose build
-docker compose run --rm export
-docker compose run --rm inference --prompt <prompt_in_quotes>
+export PATH="$PWD/utils:$PATH"
+cd models/multimodal/text_to_image/sdxl_deepcache
+mkdir -p cache onnx_files qpc compile_logs images
+qaic-container build
+qaic-container run --rm export
+qaic-container run --rm inference --prompt "<your prompt>"
 ```
+
+The containers run as your host user and receive the host's `qaic` GID for
+device access. Existing output directories must be writable by your account. Re-run
+`qaic-container build` after changing the recipe or switching hosts or users.
 
 `export` downloads the model weights, then runs both the deep and shallow
 DeepCache passes described in step 1 and compiles all QPCs. `inference`
@@ -130,9 +141,18 @@ pip install .
 cd ..
 ```
 
-4. Run the SDXL inference on AI 100 device. 
+4. Run the SDXL inference on AI 100 device.
+
+For host inference without `sudo`, add yourself to the `qaic` group:
+
+```bash
+sudo usermod -aG qaic "$USER"
 ```
-bash run_config_inference.sh $(which python3)
+
+Log out and log back in to apply the membership. Then run inference:
+
+```bash
+bash run_config_inference.sh "$(which python3)"
 ```
 Note: ```CACHE_INTERVAL``` variable in ```run_config_inference.sh``` refers to the period of caching
 

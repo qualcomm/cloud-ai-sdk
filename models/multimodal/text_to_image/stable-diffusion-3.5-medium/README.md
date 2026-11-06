@@ -12,12 +12,23 @@ folder (ONNX models, QPCs, and downloaded weights persist here), and access
 to the gated stabilityai/stable-diffusion-3.5-medium repository: run
 `huggingface-cli login` on the host, the containers mount
 `~/.cache/huggingface/token` read-only.
+The Platform SDK driver must be installed on the host.
 
+From the repository root, add [qaic-container](../../../../utils/README.md) to
+PATH, then prepare this recipe's output directories:
 ```bash
-docker compose build
-docker compose run --rm export
-docker compose run --rm inference --prompt <prompt_in_quotes> --neg_prompt <prompt_in_quotes>
+export PATH="$PWD/utils:$PATH"
+cd models/multimodal/text_to_image/stable-diffusion-3.5-medium
+mkdir -p cache onnx_files qpc compile_logs images
+qaic-container build
+qaic-container run --rm export
+qaic-container run --rm inference --prompt "<your prompt>" --neg_prompt "<your negative prompt>"
 ```
+
+The containers run as your host user and receive the host's `qaic` GID for
+device access. Existing output directories must be writable by your account.
+Re-run `qaic-container build` after changing the recipe or switching hosts or
+users.
 
 `export` covers steps 1 to 3 below: it downloads the gated weights into
 `cache/`, generates the ONNX models for the CLIP and T5 text encoders,
@@ -100,9 +111,18 @@ pip install .
 cd ..
 ```
 
-3. Run the inference with 'sudo' flag if needed to access the AI 100 devices.
+3. Run the inference on AI 100 devices.
+
+For host inference without `sudo`, add yourself to the `qaic` group:
+
 ```
-sudo bash run_config_inference.sh "<positive prompt>" "<negative prompt>"
+sudo usermod -aG qaic "$USER"
+```
+
+Log out and log back in to apply the membership.
+
+```
+bash run_config_inference.sh "<positive prompt>" "<negative prompt>"
 ```
 
 ## 4. Python interface
