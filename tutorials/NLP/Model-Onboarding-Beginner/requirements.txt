@@ -8,6 +8,5 @@ huggingface-hub==0.26.2
 numpy==1.26.4
 onnxruntime
 torch==2.7.0+cpu
-pillow==10.4.0
 onnxsim==0.7.3
 /opt/qti-aic/dev/lib/x86_64/qaic-0.0.1-py3-none-any.whl

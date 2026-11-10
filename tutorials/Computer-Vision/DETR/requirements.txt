@@ -11,7 +11,7 @@ torch==2.7.0+cpu
 torchvision==0.22.0+cpu
 numpy==1.26.4
 onnx==1.18.0
-pillow==10.4.0
+pillow==13.0.0
 requests==2.32.3
 notebook==7.6.3
 ipykernel
