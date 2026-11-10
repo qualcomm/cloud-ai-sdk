@@ -8,7 +8,6 @@ huggingface-hub==0.26.2
 numpy==1.26.4
 onnxruntime
 torch==2.7.0+cpu
-pillow==10.4.0
 opencv-python-headless==4.11.0.86
 paramiko
 jsonschema
